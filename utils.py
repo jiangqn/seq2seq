@@ -1,6 +1,7 @@
 import torch
 
 INIT = 1e-2
+INF = 1e18
 
 def reorder_sequence(sequence_embedding, order):
     # sequence_embedding: Tensor (batch_size, time_step, embed_size)

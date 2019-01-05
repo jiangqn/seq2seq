@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from utils import INF
 
 class Attention(nn.Module):
 
@@ -18,7 +19,9 @@ class Attention(nn.Module):
         pass
 
     def _probability_normalize(self, score, mask):
-        pass
+        score = score.masked_fill(mask==0, -INF)
+        probability = F.softmax(score, dim=-1)
+        return probability
 
     def _attention_aggregate(self, probability, value):
-        pass
+        return probability.matmul(value)
