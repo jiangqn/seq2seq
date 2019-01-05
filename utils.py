@@ -1,3 +1,5 @@
+import torch
+
 INIT = 1e-2
 
 def reorder_sequence(sequence_embedding, order):
@@ -19,3 +21,18 @@ def reorder_lstm_states(states, order):
         states[0].index_select(index=order, dim=1),
         states[1].index_select(index=order, dim=1)
     )
+
+def sequence_mean(sequence, seq_lens, dim):
+    assert sequence.size(0) == len(seq_lens)
+    seq_sum = torch.sum(sequence, dim=dim, keepdim=False)
+    seq_mean = torch.stack([s / l for s, l in zip(seq_sum, seq_lens)], dim=0)
+    return seq_mean
+
+def len_mask(seq_lens):
+    max_len = max(seq_lens)
+    batch_size = len(seq_lens)
+    mask = torch.ByteTensor(batch_size, max_len).cuda()
+    mask.fill_(0)
+    for i, l in enumerate(seq_lens):
+        mask[i, :l].fill_(1)
+    return mask

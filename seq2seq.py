@@ -3,6 +3,9 @@ import torch.nn as nn
 from torch.nn import init
 import torch.nn.functional as F
 from encoder import Encoder
+from bridge import Bridge
+from decoder import Decoder
+from utils import len_mask
 
 class Seq2Seq(nn.Module):
 
@@ -11,7 +14,6 @@ class Seq2Seq(nn.Module):
         # [embedding setting]
         self._embedding = embedding
         self._embed_size = embedding.embed_size
-
         # [encoder setting]
         self._encoder = Encoder(
             embed_size=self._embed_size,
@@ -20,9 +22,18 @@ class Seq2Seq(nn.Module):
             bidirectional=bidirectional,
             dropout=dropout
         )
-        encoder_output_size = hidden_size * (2 if bidirectional else 1)
+        # [bridge setting]
+        self._bridge = Bridge(
+            hidden_size=hidden_size,
+            bidirectional=bidirectional
+        )
+        # [decoder setting]
+        self._decoder = Decoder()
 
 
     def forward(self, src, src_lens, trg):
-        src = self._embedding(src)
-        encoder_output, (final_encoder_hidden, final_encoder_cell) = self._encoder(src, src_lens)
+        src_embedding = self._embedding(src)
+        src_memory, (init_decoder_hidden, init_decoder_cell) = self._bridge(self._encoder(src_embedding, src_lens))
+        src_mask = len_mask(src_lens)
+        trg_embedding = self._embedding(trg)
+        logit = self._decoder(src_memory, src_mask, (init_decoder_hidden, init_decoder_cell), trg_embedding)
