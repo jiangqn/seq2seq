@@ -7,7 +7,6 @@ class Attention(nn.Module):
 
     def __init__(self):
         super(Attention, self).__init__()
-        pass
 
     def forward(self, query, key, value, mask):
         score = self._score(query, key)
@@ -16,7 +15,7 @@ class Attention(nn.Module):
         return output
 
     def _score(self, query, key):
-        pass
+        return query.matmul(key.transpose(1, 2))
 
     def _probability_normalize(self, score, mask):
         score = score.masked_fill(mask==0, -INF)
