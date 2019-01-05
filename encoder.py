@@ -7,6 +7,7 @@ from utils import INIT, reorder_sequence, reorder_lstm_states
 class Encoder(nn.Module):
 
     def __init__(self, embed_size, hidden_size, num_layers, bidirectional, dropout):
+        super(Encoder, self).__init__()
         self._lstm = nn.LSTM(
             input_size=embed_size,
             hidden_size=hidden_size,
