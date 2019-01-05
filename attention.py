@@ -8,5 +8,17 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         pass
 
-    def forward(self):
+    def forward(self, query, key, value, mask):
+        score = self._score(query, key)
+        probability = self._probability_normalize(score, mask)
+        output = self._attention_aggregate(probability, value)
+        return output
+
+    def _score(self, query, key):
+        pass
+
+    def _probability_normalize(self, score, mask):
+        pass
+
+    def _attention_aggregate(self, probability, value):
         pass
