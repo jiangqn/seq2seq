@@ -31,10 +31,10 @@ class Encoder(nn.Module):
         # src_lens: list (batch_size,)
         batch_size = src_embedding.size(0)
         assert batch_size == len(src_lens)
-        init_encoder_hidden, init_encoder_cell = self._get_init_states(batch_size)
+        init_encoder_states = self._get_init_states(batch_size)
         packed_src, sort_index = self._pack_padded_sequence(src_embedding, src_lens)
-        packed_output, (final_encoder_hidden, final_encoder_cell) = self._lstm(packed_src, (init_encoder_hidden, init_encoder_cell))
-        return self._pad_packed_sequence(packed_output, final_encoder_hidden, final_encoder_cell, sort_index)
+        packed_output, final_encoder_states = self._lstm(packed_src, init_encoder_states)
+        return self._pad_packed_sequence(packed_output, final_encoder_states, sort_index)
 
     def _get_init_states(self, batch_size):
         state_layers = self._init_encoder_hidden.size(0)
@@ -44,7 +44,8 @@ class Encoder(nn.Module):
         init_encoder_cell = self._init_encoder_cell.expand(*size)
         init_encoder_hidden = init_encoder_hidden.contiguous()
         init_encoder_cell = init_encoder_cell.contiguous()
-        return (init_encoder_hidden, init_encoder_cell)
+        init_encoder_states = (init_encoder_hidden, init_encoder_cell)
+        return init_encoder_states
 
     def _pack_padded_sequence(self, src_embedding, src_lens):
         sort_index = sorted(range(len(src_lens)), key=lambda i: src_lens[i], reverse=True)
@@ -53,11 +54,10 @@ class Encoder(nn.Module):
         packed_src = pack_padded_sequence(src_embedding, src_lens)
         return packed_src
 
-    def _pad_packed_sequence(self, packed_output, final_encoder_hidden, final_encoder_cell, sort_index):
+    def _pad_packed_sequence(self, packed_output, final_encoder_states, sort_index):
         encoder_output, _ = pad_packed_sequence(packed_output)
         back_map = {index: i for i, index in enumerate(sort_index)}
         reorder_index = [back_map[i] for i in range(len(sort_index))]
         encoder_output = reorder_sequence(encoder_output, reorder_index)
-        (final_encoder_hidden, final_encoder_cell) = reorder_lstm_states((final_encoder_hidden, final_encoder_cell),
-                                                                         reorder_index)
-        return encoder_output, (final_encoder_hidden, final_encoder_cell)
+        final_encoder_states = reorder_lstm_states(final_encoder_states, reorder_index)
+        return encoder_output, final_encoder_states
