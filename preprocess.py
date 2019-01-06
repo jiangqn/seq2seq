@@ -69,19 +69,22 @@ log.write('vocab_size', vocab_size)
 
 def text2vector(texts, max_len):
     num = len(texts)
-    res = np.zeros((num, max_len), dtype=np.int32)
+    vectors = np.zeros((num, max_len), dtype=np.int32)
+    lens = []
     for i in range(num):
+        lens.append(len(texts[i]))
         for j, word in enumerate(texts[i]):
-            res[i, j] = word2index[word]
-    return res
+            vectors[i, j] = word2index[word]
+    lens = np.asarray(lens).astype(np.int32)
+    return vectors, lens
 
-train_src = text2vector(train_src, train_src_max_len)
-train_trg = text2vector(train_trg, train_trg_max_len)
-dev_src = text2vector(dev_src, dev_src_max_len)
-dev_trg = text2vector(dev_trg, dev_trg_max_len)
-test_src = text2vector(test_src, test_src_max_len)
-test_trg = text2vector(test_trg, test_trg_max_len)
+train_src, train_src_lens = text2vector(train_src, train_src_max_len)
+train_trg, train_trg_lens = text2vector(train_trg, train_trg_max_len)
+dev_src, dev_src_lens = text2vector(dev_src, dev_src_max_len)
+dev_trg, dev_trg_lens = text2vector(dev_trg, dev_trg_max_len)
+test_src, test_src_lens = text2vector(test_src, test_src_max_len)
+test_trg, test_trg_lens = text2vector(test_trg, test_trg_max_len)
 
-np.savez(train_save_path, src=train_src, trg=train_trg)
-np.savez(dev_save_path, src=dev_src, trg=dev_trg)
-np.savez(test_save_path, src=test_src, trg=test_trg)
+np.savez(train_save_path, src=train_src, src_lens=train_src_lens, trg=train_trg, trg_lens=train_trg_lens)
+np.savez(dev_save_path, src=dev_src, src_lens=dev_src_lens, trg=dev_trg, trg_lens=dev_trg_lens)
+np.savez(test_save_path, src=test_src, src_lens=test_src_lens, trg=test_trg, trg_lens=test_trg_lens)
