@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from attention import Attention
-from utils import sequence_mean
+from model.attention import Attention
+from model.utils import sequence_mean
 
 class Decoder(nn.Module):
 

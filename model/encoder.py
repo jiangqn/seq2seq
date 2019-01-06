@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.nn import init
-from torch.nn.rnn import pack_padded_sequence, pad_packed_sequence
-from utils import INIT, reorder_sequence, reorder_lstm_states
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from model.utils import INIT, reorder_sequence, reorder_lstm_states
 
 class Encoder(nn.Module):
 
@@ -40,8 +40,8 @@ class Encoder(nn.Module):
         state_layers = self._init_encoder_hidden.size(0)
         hidden_size = self._init_encoder_hidden.size(1)
         size = (state_layers, batch_size, hidden_size)
-        init_encoder_hidden = self._init_encoder_hidden.expand(*size)
-        init_encoder_cell = self._init_encoder_cell.expand(*size)
+        init_encoder_hidden = self._init_encoder_hidden.unsqueeze(1).expand(*size)
+        init_encoder_cell = self._init_encoder_cell.unsqueeze(1).expand(*size)
         init_encoder_hidden = init_encoder_hidden.contiguous()
         init_encoder_cell = init_encoder_cell.contiguous()
         init_encoder_states = (init_encoder_hidden, init_encoder_cell)

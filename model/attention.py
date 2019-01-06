@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import INF
+from model.utils import INF
 
 class Attention(nn.Module):
 

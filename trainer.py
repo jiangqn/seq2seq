@@ -6,7 +6,7 @@ from model.encoder import Encoder
 from model.bridge import Bridge
 from model.decoder import Decoder, MultiLayerLSTMCells
 from model.seq2seq import Seq2Seq
-from dataset import Dataset
+from dataset import Seq2SeqDataset
 from model.utils import len_mask
 
 class Trainer(object):
@@ -26,8 +26,8 @@ class Trainer(object):
         return model
 
     def _make_data(self):
-        train_dataset = Dataset(self._config.train_path)
-        dev_dataset = Dataset(self._config.dev_path)
+        train_dataset = Seq2SeqDataset(self._config.train_path)
+        dev_dataset = Seq2SeqDataset(self._config.dev_path)
         train_loader = DataLoader(train_dataset, self._config.batch_size, shuffle=True, num_workers=2)
         dev_loader = DataLoader(dev_dataset, self._config.batch_size, shuffle=True, num_workers=2)
         return train_loader, dev_loader
@@ -35,6 +35,7 @@ class Trainer(object):
     def run(self):
         model = self._make_model()
         model = model.cuda()
+        print(model)
         criterion = nn.CrossEntropyLoss(reduction='none')
         optimizer = optim.Adam(model.parameters(), lr=self._config.learning_rate)
         train_loader, dev_loader = self._make_data()

@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils import len_mask
+from model.utils import len_mask
 
 class Seq2Seq(nn.Module):
 
