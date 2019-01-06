@@ -1,3 +1,6 @@
+import torch
+from torch.utils.data import Dataset
+import numpy as np
 import operator
 from utils import PAD, SOS, EOS, UNK
 
@@ -35,3 +38,20 @@ class Vocab(object):
             else:
                 index2word[index] = word
         return word2index, index2word
+
+class Seq2SeqDataset(Dataset):
+
+    def __init__(self, path):
+        super(Seq2SeqDataset, self).__init__()
+        data = np.load(path)
+        self._src = torch.tensor(data['src']).long()
+        self._src_lens = torch.tensor(data['src_lens']).long()
+        self._trg = torch.tensor(data['trg']).long()
+        self._trg_lens = torch.tensor(data['trg_lens']).long()
+        self._len = self._src.size(0)
+
+    def __getitem__(self, index):
+        return self._src[index], self._src_lens[index], self._trg[index], self._trg_lens[index]
+
+    def __len__(self):
+        return self._len
