@@ -1,8 +1,8 @@
-import os
 import numpy as np
 from utils import tokenize
 from dataset import Vocab
 from logger import Logger
+import pickle
 
 train_src_path = './data/raw/src-train.txt'
 train_trg_path = './data/raw/trg-train.txt'
@@ -64,18 +64,24 @@ word2index, index2word = vocab.get_vocab()
 total_words = len(word2index)
 vocab_size = len(index2word)
 
+with open('./data/vocab/word2index.pickle', 'wb') as handle:
+    pickle.dump(word2index, handle)
+
+with open('./data/vocab/index2word.pickle', 'wb') as handle:
+    pickle.dump(index2word, handle)
+
 log.write('total_words', total_words)
 log.write('vocab_size', vocab_size)
 
 def text2vector(texts, max_len):
     num = len(texts)
-    vectors = np.zeros((num, max_len), dtype=np.int32)
+    vectors = np.zeros((num, max_len), dtype=np.int16)
     lens = []
     for i in range(num):
         lens.append(len(texts[i]))
         for j, word in enumerate(texts[i]):
             vectors[i, j] = word2index[word]
-    lens = np.asarray(lens).astype(np.int32)
+    lens = np.asarray(lens).astype(np.int16)
     return vectors, lens
 
 train_src, train_src_lens = text2vector(train_src, train_src_max_len)
