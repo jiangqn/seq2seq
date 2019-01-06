@@ -17,13 +17,13 @@ class Vocab(object):
         for word in words:
             self.add(word)
 
-    def get_vocab(self, max_num=None, min_freq=0):
+    def get_vocab(self, max_size=None, min_freq=0):
         sorted_words = sorted(self._count_dict.items(), key=operator.itemgetter(1), reverse=True)
         word2index = {}
         for word in self._predefined_list:
             word2index[word] = len(word2index)
         for word, freq in sorted_words:
-            if (max_num is not None and len(word2index) >= max_num) or freq < min_freq:
+            if (max_size is not None and len(word2index) >= max_size) or freq < min_freq:
                 word2index[word] = word2index[UNK]
             else:
                 word2index[word] = len(word2index)

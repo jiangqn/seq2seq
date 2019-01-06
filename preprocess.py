@@ -1,17 +1,23 @@
 import os
+import numpy as np
 from utils import tokenize
 from dataset import Vocab
+from logger import Logger
 
-base_path = './data'
-train_src_path = os.path.join(base_path, 'raw/src-train.txt')
-train_trg_path = os.path.join(base_path, 'raw/trg-train.txt')
-dev_src_path = os.path.join(base_path, 'raw/src-dev.txt')
-dev_trg_path = os.path.join(base_path, 'raw/trg-dev.txt')
-test_src_path = os.path.join(base_path, 'raw/src-test.txt')
-test_trg_path = os.path.join(base_path, 'raw/trg-test.txt')
+train_src_path = './data/raw/src-train.txt'
+train_trg_path = './data/raw/trg-train.txt'
+dev_src_path = './data/raw/src-dev.txt'
+dev_trg_path = './data/raw/trg-dev.txt'
+test_src_path = './data/raw/src-test.txt'
+test_trg_path = './data/raw/trg-test.txt'
 
-data_log_path = os.path.join(base_path, 'log/data_log.txt')
-log = open(data_log_path, 'w', encoding=u'utf-8')
+data_log_path = './data/log/data_log.txt'
+
+train_save_path = './data/processed/train.npz'
+dev_save_path = './data/processed/dev.npz'
+test_save_path = './data/processed/test.npz'
+
+log = Logger(data_log_path)
 
 def process(src_path, trg_path):
     src_max_len, trg_max_len = 0, 0
@@ -30,6 +36,16 @@ train_src, train_trg, train_num, train_src_max_len, train_trg_max_len = process(
 dev_src, dev_trg, dev_num, dev_src_max_len, dev_trg_max_len = process(dev_src_path, dev_trg_path)
 test_src, test_trg, test_num, test_src_max_len, test_trg_max_len = process(test_src_path, test_trg_path)
 
+log.write('train_num', train_num)
+log.write('train_src_max_len', train_src_max_len)
+log.write('train_trg_max_len', train_trg_max_len)
+log.write('dev_num', dev_num)
+log.write('dev_src_max_len', dev_src_max_len)
+log.write('dev_trg_max_len', dev_trg_max_len)
+log.write('test_num', test_num)
+log.write('test_src_max_len', test_src_max_len)
+log.write('test_trg_max_len', test_trg_max_len)
+
 vocab = Vocab()
 
 for i in range(train_num):
@@ -45,7 +61,27 @@ for i in range(test_num):
     vocab.add_list(test_trg[i])
 
 word2index, index2word = vocab.get_vocab()
+total_words = len(word2index)
 vocab_size = len(index2word)
 
-print(train_num, dev_num, test_num)
-print(vocab_size)
+log.write('total_words', total_words)
+log.write('vocab_size', vocab_size)
+
+def text2vector(texts, max_len):
+    num = len(texts)
+    res = np.zeros((num, max_len), dtype=np.int32)
+    for i in range(num):
+        for j, word in enumerate(texts[i]):
+            res[i, j] = word2index[word]
+    return res
+
+train_src = text2vector(train_src, train_src_max_len)
+train_trg = text2vector(train_trg, train_trg_max_len)
+dev_src = text2vector(dev_src, dev_src_max_len)
+dev_trg = text2vector(dev_trg, dev_trg_max_len)
+test_src = text2vector(test_src, test_src_max_len)
+test_trg = text2vector(test_trg, test_trg_max_len)
+
+np.savez(train_save_path, src=train_src, trg=train_trg)
+np.savez(dev_save_path, src=dev_src, trg=dev_trg)
+np.savez(test_save_path, src=test_src, trg=test_trg)
