@@ -42,8 +42,7 @@ def sequence_mean(sequence, seq_lens, dim):
     seq_mean = torch.stack([s / l for s, l in zip(seq_sum, seq_lens)], dim=0)
     return seq_mean
 
-def len_mask(seq_lens):
-    max_len = max(seq_lens)
+def len_mask(seq_lens, max_len):
     batch_size = len(seq_lens)
     mask = torch.ByteTensor(batch_size, max_len).cuda()
     mask.fill_(0)

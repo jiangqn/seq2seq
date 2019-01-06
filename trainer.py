@@ -1,11 +1,13 @@
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader
 from model.encoder import Encoder
 from model.bridge import Bridge
 from model.decoder import Decoder, MultiLayerLSTMCells
 from model.seq2seq import Seq2Seq
 from dataset import Dataset
+from model.utils import len_mask
 
 class Trainer(object):
 
@@ -33,12 +35,35 @@ class Trainer(object):
     def run(self):
         model = self._make_model()
         model = model.cuda()
+        criterion = nn.CrossEntropyLoss(reduction='none')
+        optimizer = optim.Adam(model.parameters(), lr=self._config.learning_rate)
         train_loader, dev_loader = self._make_data()
         for epoch in range(self._config.num_epoches):
+            sum_loss = 0
+            sum_examples = 0
             for data in train_loader:
                 src, src_lens, trg, trg_lens = data
-                src, src_lens, trg, trg_lens = src.cuda(), src_lens.cuda(), trg.cuda(), trg_lens.cuda()
+                src, src_lens, trg, trg_lens = src.cuda(), src_lens.tolist(), trg.cuda(), trg_lens.tolist()
+                optimizer.zero_grad()
                 logits = model(src, src_lens, trg)
+                loss = self._loss(logits, trg, trg_lens, criterion)
+                sum_loss += loss * src.size(0)
+                sum_examples += src.size(0)
+                loss.backward()
+                nn.utils.clip_grad_norm_(model.parameters(), self._config.clip)
+                optimizer.step()
+            avg_loss = sum_loss
+            print('epoch %d: loss %.4f' % (epoch, avg_loss))
 
-    def _loss(self, logits, trg, trg_lens):
-        pass
+    def _loss(self, logits, trg, trg_lens, criterion):
+        # logits: Tensor (batch_size, time_step, vocab_size)
+        # trg: Tensor (batch_size, time_step)
+        # trg_lens: list (batch_size,)
+        mask = len_mask(trg_lens, trg.size(1))
+        vocab_size = logits.size(2)
+        logits = logits.view(-1, vocab_size)
+        trg = logits.view(-1)
+        mask = mask.view(-1)
+        losses = criterion(logits, trg) * mask
+        loss = losses.sum() / mask.sum()
+        return loss

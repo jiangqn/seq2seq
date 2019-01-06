@@ -60,7 +60,7 @@ for i in range(test_num):
     vocab.add_list(test_src[i])
     vocab.add_list(test_trg[i])
 
-word2index, index2word = vocab.get_vocab()
+word2index, index2word = vocab.get_vocab(min_freq=3)
 total_words = len(word2index)
 vocab_size = len(index2word)
 
