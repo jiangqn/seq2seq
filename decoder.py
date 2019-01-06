@@ -43,7 +43,7 @@ class Decoder(nn.Module):
         token_output = torch.max(logit, dim=1, keepdim=True)[1]
         return token_output, decoder_states, decoder_output
 
-    def get_init_decoder_out(self, src_memory, src_lens, init_decoder_states):
+    def get_init_decoder_output(self, src_memory, src_lens, init_decoder_states):
         init_decoder_hidden, _ = init_decoder_states
         init_top_hidden = init_decoder_hidden[-1]
         src_mean = sequence_mean(src_memory, src_lens, dim=1)
