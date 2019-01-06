@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from attention import Attention
+from utils import sequence_mean
 
 class Decoder(nn.Module):
 
@@ -42,8 +43,12 @@ class Decoder(nn.Module):
         token_output = torch.max(logit, dim=1, keepdim=True)[1]
         return token_output, decoder_states, decoder_output
 
-    def get_init_attn_out(self):
-        pass
+    def get_init_decoder_out(self, src_memory, src_lens, init_decoder_states):
+        init_decoder_hidden, _ = init_decoder_states
+        init_top_hidden = init_decoder_hidden[-1]
+        src_mean = sequence_mean(src_memory, src_lens, dim=1)
+        init_decoder_output = self._output_projection(torch.cat([init_top_hidden, src_mean]))
+        return init_decoder_output
 
 class MultiLayerLSTMCells(nn.Module):
 
