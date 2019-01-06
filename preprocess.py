@@ -1,5 +1,5 @@
 import numpy as np
-from utils import tokenize
+from model.utils import tokenize
 from dataset import Vocab
 from logger import Logger
 import pickle

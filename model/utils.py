@@ -50,3 +50,19 @@ def len_mask(seq_lens):
     for i, l in enumerate(seq_lens):
         mask[i, :l].fill_(1)
     return mask
+
+def load_word_embeddings(fname, embedding_dim, word2id):
+    if not os.path.isfile(fname):
+        raise IOError(ENOENT, 'Not a file', fname)
+
+    word2vec = np.random.uniform(-0.01, 0.01, [len(word2id), embedding_dim])
+    oov = len(word2id)
+    with open(fname, 'r', encoding='utf-8') as f:
+        for line in f:
+            content = line.split(' ')
+            if content[0] in word2id:
+                word2vec[word2id[content[0]]] = np.array(list(map(float, content[1:])))
+                oov = oov - 1
+    word2vec[word2id['<pad>'], :] = 0
+    print('There are %s words in vocabulary and %s words out of vocabulary' % (len(word2id) - oov, oov))
+    return word2vec

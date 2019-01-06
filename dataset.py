@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import operator
-from utils import PAD, SOS, EOS, UNK
+from model.utils import PAD, SOS, EOS, UNK
 
 class Vocab(object):
 
