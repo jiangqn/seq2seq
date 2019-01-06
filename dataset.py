@@ -13,6 +13,10 @@ class Vocab(object):
         else:
             self._count_dict[word] = 1
 
+    def add_list(self, words):
+        for word in words:
+            self.add(word)
+
     def get_vocab(self, max_num=None, min_freq=0):
         sorted_words = sorted(self._count_dict.items(), key=operator.itemgetter(1), reverse=True)
         word2index = {}
@@ -25,7 +29,7 @@ class Vocab(object):
                 word2index[word] = len(word2index)
         index2word = {}
         index2word[word2index[UNK]] = UNK
-        for word, index in word2index:
+        for word, index in word2index.items():
             if index == word2index[UNK]:
                 continue
             else:

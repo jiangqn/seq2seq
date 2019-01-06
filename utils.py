@@ -1,4 +1,6 @@
 import torch
+import spacy
+import re
 
 INIT = 1e-2
 INF = 1e18
@@ -7,6 +9,12 @@ PAD = '<PAD>'
 SOS = '<SOS>'
 EOS = '<EOS>'
 UNK = '<UNK>'
+
+url = re.compile('(<url>.*</url>)')
+spacy_en = spacy.load('en')
+
+def tokenize(text):
+    return [tok.text for tok in spacy_en.tokenizer(url.sub('@URL@', text))]
 
 def reorder_sequence(sequence_embedding, order):
     # sequence_embedding: Tensor (batch_size, time_step, embed_size)
