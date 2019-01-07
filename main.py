@@ -17,6 +17,7 @@ parser.add_argument('--l2_reg', type=float, default=0)
 parser.add_argument('--clip', type=float, default=5.0)
 parser.add_argument('--dropout', type=float, default=0.3)
 parser.add_argument('--embedding_file_name', type=str, default='data/vocab/glove.npy')
+parser.add_argument('--vocab_path', type=str, default='./data/vocab/index2word.pickle')
 parser.add_argument('--train_path', type=str, default='./data/processed/train.npz')
 parser.add_argument('--dev_path', type=str, default='./data/processed/dev.npz')
 

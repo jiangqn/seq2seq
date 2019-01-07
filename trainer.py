@@ -8,7 +8,8 @@ from model.bridge import Bridge
 from model.decoder import Decoder, MultiLayerLSTMCells
 from model.seq2seq import Seq2Seq
 from dataset import Seq2SeqDataset
-from model.utils import len_mask
+from model.utils import len_mask, EOS
+import pickle
 
 class Trainer(object):
 
@@ -34,6 +35,10 @@ class Trainer(object):
         train_loader = DataLoader(train_dataset, self._config.batch_size, shuffle=True, num_workers=2)
         dev_loader = DataLoader(dev_dataset, self._config.batch_size, shuffle=True, num_workers=2)
         return train_loader, dev_loader
+
+    def _make_vocab(self):
+        with open(self._config.vocab_path, 'rb') as handle:
+            self._index2word = pickle.load(handle)
 
     def run(self):
         model = self._make_model()
@@ -64,6 +69,7 @@ class Trainer(object):
                 optimizer.step()
             avg_loss = sum_loss / sum_examples
             print('[epoch %2d] [loss %.4f]' % (epoch, avg_loss))
+            self._eval(model, dev_loader)
 
     def _loss(self, logits, trg, trg_lens, criterion):
         # logits: Tensor (batch_size, time_step, vocab_size)
@@ -77,3 +83,25 @@ class Trainer(object):
         losses = criterion(logits, trg).masked_select(mask)
         loss = losses.mean()
         return loss
+
+    def _tensor2texts(self, tensor):
+        texts = []
+        for vector in tensor:
+            text = ''
+            for index in vector:
+                word = self._index2word[index.item()]
+                if word == EOS:
+                    break
+                else:
+                    text += word
+            texts.append(text)
+        return texts
+
+    def _eval(self, model, data_loader):
+        for data in data_loader:
+            src, src_lens, trg, trg_lens = data
+            src, src_lens, trg_lens = src.cuda(), src_lens.tolist(), trg_lens.tolist()
+            with torch.no_grad():
+                output = model.decode(src, src_lens, max(trg_lens) + 1)
+                texts = self._tensor2texts(output)
+                print(texts[0])
