@@ -1,6 +1,8 @@
 import torch
 import spacy
 import re
+import os
+import numpy as np
 
 INIT = 1e-2
 INF = 1e18
@@ -50,18 +52,15 @@ def len_mask(seq_lens, max_len):
         mask[i, :l].fill_(1)
     return mask
 
-def load_word_embeddings(fname, embedding_dim, word2id):
+def load_word_embeddings(fname, vocab_size, embed_size, word2index):
     if not os.path.isfile(fname):
         raise IOError(ENOENT, 'Not a file', fname)
 
-    word2vec = np.random.uniform(-0.01, 0.01, [len(word2id), embedding_dim])
-    oov = len(word2id)
+    word2vec = np.random.uniform(-0.01, 0.01, [vocab_size, embed_size])
     with open(fname, 'r', encoding='utf-8') as f:
         for line in f:
             content = line.split(' ')
-            if content[0] in word2id:
-                word2vec[word2id[content[0]]] = np.array(list(map(float, content[1:])))
-                oov = oov - 1
-    word2vec[word2id['<pad>'], :] = 0
-    print('There are %s words in vocabulary and %s words out of vocabulary' % (len(word2id) - oov, oov))
+            if content[0] in word2index:
+                word2vec[word2index[content[0]]] = np.array(list(map(float, content[1:])))
+    word2vec[word2index[PAD], :] = 0
     return word2vec

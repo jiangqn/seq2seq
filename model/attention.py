@@ -22,7 +22,7 @@ class Attention(nn.Module):
         return query.unsqueeze(1).matmul(key.transpose(1, 2))
 
     def _probability_normalize(self, score, mask):
-        score = score.masked_fill(mask==0, -INF)
+        score = score.masked_fill(mask.unsqueeze(1)==0, -INF)
         probability = F.softmax(score, dim=-1)
         return probability
 

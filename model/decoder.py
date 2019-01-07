@@ -12,7 +12,11 @@ class Decoder(nn.Module):
         self._lstm_cell = lstm_cell
         self._query_projection = nn.Linear(hidden_size, hidden_size)
         self._attn = Attention()
-        self._output_projection = nn.Linear(hidden_size * 2, hidden_size)
+        self._output_projection = nn.Sequential(
+            nn.Linear(2 * hidden_size, hidden_size),
+            nn.Tanh(),
+            nn.Linear(hidden_size, embedding.embedding_dim)
+        )
 
     def forward(self, src_memory, src_mask, init_decoder_states, init_decoder_output, trg):
         max_len = trg.size(1)
@@ -52,7 +56,7 @@ class Decoder(nn.Module):
 
 class MultiLayerLSTMCells(nn.Module):
 
-    def __init__(self, input_size, hidden_size, num_layers, bias=True, dropout=0.0):
+    def __init__(self, input_size, hidden_size, num_layers, dropout, bias=True):
         super(MultiLayerLSTMCells, self).__init__()
         self._input_size = input_size
         self._hidden_size = hidden_size

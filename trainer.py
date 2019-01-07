@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import numpy as np
 from torch.utils.data import DataLoader
 from model.encoder import Encoder
 from model.bridge import Bridge
@@ -16,10 +17,12 @@ class Trainer(object):
 
     def _make_model(self):
         embedding = nn.Embedding(self._config.vocab_size, self._config.embed_size)
+        embedding.weight.data.copy_(torch.from_numpy(np.load(self._config.embedding_file_name)))
+        embedding.weight.requires_grad = False
         encoder = Encoder(self._config.embed_size, self._config.hidden_size, self._config.num_layers,
                           self._config.bidirectional, self._config.dropout)
         bridge = Bridge(self._config.hidden_size, self._config.bidirectional)
-        lstm_cell = MultiLayerLSTMCells(self._config.embed_size + self._config.hidden_size, self._config.hidden_size,
+        lstm_cell = MultiLayerLSTMCells(2 * self._config.embed_size , self._config.hidden_size,
                                         self._config.num_layers, dropout=self._config.dropout)
         decoder = Decoder(embedding, lstm_cell, self._config.hidden_size)
         model = Seq2Seq(embedding, encoder, bridge, decoder)
@@ -48,8 +51,8 @@ class Trainer(object):
                 optimizer.zero_grad()
                 logits = model(src, src_lens, trg)
                 loss = self._loss(logits, trg, trg_lens, criterion)
-                print(loss)
-                sum_loss += loss * src.size(0)
+                print(loss.item())
+                sum_loss += loss.item() * src.size(0)
                 sum_examples += src.size(0)
                 loss.backward()
                 nn.utils.clip_grad_norm_(model.parameters(), self._config.clip)
@@ -64,7 +67,7 @@ class Trainer(object):
         mask = len_mask(trg_lens, trg.size(1))
         vocab_size = logits.size(2)
         logits = logits.view(-1, vocab_size)
-        trg = logits.view(-1)
+        trg = trg.view(-1)
         mask = mask.view(-1)
         losses = criterion(logits, trg).masked_select(mask)
         loss = losses.mean()

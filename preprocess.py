@@ -1,5 +1,5 @@
 import numpy as np
-from model.utils import tokenize
+from model.utils import tokenize, load_word_embeddings
 from dataset import Vocab
 from logger import Logger
 import pickle
@@ -16,6 +16,9 @@ data_log_path = './data/log/data_log.txt'
 train_save_path = './data/processed/train.npz'
 dev_save_path = './data/processed/dev.npz'
 test_save_path = './data/processed/test.npz'
+
+glove_path = './data/vocab/glove.840B.300d.txt'
+glove_save_path = './data/vocab/glove.npy'
 
 log = Logger(data_log_path)
 
@@ -94,3 +97,6 @@ test_trg, test_trg_lens = text2vector(test_trg, test_trg_max_len)
 np.savez(train_save_path, src=train_src, src_lens=train_src_lens, trg=train_trg, trg_lens=train_trg_lens)
 np.savez(dev_save_path, src=dev_src, src_lens=dev_src_lens, trg=dev_trg, trg_lens=dev_trg_lens)
 np.savez(test_save_path, src=test_src, src_lens=test_src_lens, trg=test_trg, trg_lens=test_trg_lens)
+
+glove = load_word_embeddings(glove_path, vocab_size, 300, word2index)
+np.save(glove_save_path, glove)

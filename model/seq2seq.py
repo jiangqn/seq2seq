@@ -18,6 +18,6 @@ class Seq2Seq(nn.Module):
         src_embedding = self._embedding(src)
         encoder_output, final_encoder_states = self._encoder(src_embedding, src_lens)
         src_memory, init_decoder_states = self._bridge(encoder_output, final_encoder_states)
-        src_mask = len_mask(src_lens, src.size(1))
+        src_mask = len_mask(src_lens, src_memory.size(1))
         init_decoder_output = self._decoder.get_init_decoder_output(src_memory, src_lens, init_decoder_states)
         return self._decoder(src_memory, src_mask, init_decoder_states, init_decoder_output, trg)
