@@ -50,8 +50,8 @@ class Trainer(object):
                 src, src_lens, trg, trg_lens = data
                 src, src_lens, trg, trg_lens = src.cuda(), src_lens.tolist(), trg.cuda(), trg_lens.tolist()
                 optimizer.zero_grad()
-                logits = model(src, src_lens, trg)
-                loss = self._loss(logits, trg, trg_lens, criterion)
+                logits = model(src, src_lens, trg[:, 0:-1])
+                loss = self._loss(logits, trg[:, 1:], trg_lens, criterion)
                 sum_loss += loss.item() * src.size(0)
                 sum_examples += src.size(0)
                 s_loss += loss.item()

@@ -3,6 +3,7 @@ from model.utils import tokenize, load_word_embeddings
 from dataset import Vocab
 from logger import Logger
 import pickle
+from model.utils import SOS, EOS
 
 train_src_path = './data/raw/src-train.txt'
 train_trg_path = './data/raw/trg-train.txt'
@@ -76,23 +77,37 @@ with open('./data/vocab/index2word.pickle', 'wb') as handle:
 log.write('total_words', total_words)
 log.write('vocab_size', vocab_size)
 
-def text2vector(texts, max_len):
+def text2src(texts, max_len):
     num = len(texts)
-    vectors = np.zeros((num, max_len), dtype=np.int32)
-    lens = []
-    for i in range(num):
-        lens.append(len(texts[i]))
-        for j, word in enumerate(texts[i]):
-            vectors[i, j] = word2index[word]
-    lens = np.asarray(lens).astype(np.int32)
-    return vectors, lens
+    src = np.zeros((num, max_len + 1), dtype=np.int32)
+    src_lens = np.zeros(num, dtype=np.int32)
+    for i, text in enumerate(texts):
+        for j, word in enumerate(text):
+            src[i, j] = word2index[word]
+        src_len = len(text)
+        src[i, src_len] = word2index[EOS]
+        src_lens[i] = src_len + 1
+    return src, src_lens
 
-train_src, train_src_lens = text2vector(train_src, train_src_max_len)
-train_trg, train_trg_lens = text2vector(train_trg, train_trg_max_len)
-dev_src, dev_src_lens = text2vector(dev_src, dev_src_max_len)
-dev_trg, dev_trg_lens = text2vector(dev_trg, dev_trg_max_len)
-test_src, test_src_lens = text2vector(test_src, test_src_max_len)
-test_trg, test_trg_lens = text2vector(test_trg, test_trg_max_len)
+def text2trg(texts, max_len):
+    num = len(texts)
+    trg = np.zeros((num, max_len + 2), dtype=np.int32)
+    trg_lens = np.zeros(num, dtype=np.int32)
+    for i, text in enumerate(texts):
+        trg[i, 0] = word2index[SOS]
+        for j, word in enumerate(text):
+            trg[i, j + 1] = word2index[word]
+        trg_len = len(text)
+        trg[i, trg_len + 1] = word2index[EOS]
+        trg_lens[i] = trg_len + 1
+    return trg, trg_lens
+
+train_src, train_src_lens = text2src(train_src, train_src_max_len)
+train_trg, train_trg_lens = text2trg(train_trg, train_trg_max_len)
+dev_src, dev_src_lens = text2src(dev_src, dev_src_max_len)
+dev_trg, dev_trg_lens = text2trg(dev_trg, dev_trg_max_len)
+test_src, test_src_lens = text2src(test_src, test_src_max_len)
+test_trg, test_trg_lens = text2trg(test_trg, test_trg_max_len)
 
 np.savez(train_save_path, src=train_src, src_lens=train_src_lens, trg=train_trg, trg_lens=train_trg_lens)
 np.savez(dev_save_path, src=dev_src, src_lens=dev_src_lens, trg=dev_trg, trg_lens=dev_trg_lens)

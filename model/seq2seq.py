@@ -31,9 +31,11 @@ class Seq2Seq(nn.Module):
         init_decoder_output = self._decoder.get_init_decoder_output(src_memory, src_lens, init_decoder_states)
         batch_size = src_memory.size(0)
         token = torch.tensor([SOS] * batch_size).unsqueeze(1)
+        decoder_states = init_decoder_states
+        decoder_output = init_decoder_output
         outputs = []
         for _ in range(max_len):
-            token,  = self._decoder.decode_step(
-                token, states, attention)
+            token, decoder_states, decoder_output = self._decoder.decode_step(src_memory, src_mask, token, decoder_states, decoder_output)
             outputs.append(token[:, 0])
-        return outputs, attns
+        outputs = torch.stack(outputs, dim=1)
+        return outputs
