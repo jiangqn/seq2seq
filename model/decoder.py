@@ -24,7 +24,7 @@ class Decoder(nn.Module):
         decoder_output = init_decoder_output
         logits = []
         for i in range(max_len):
-            token = trg[:, i: i + 1]
+            token = trg[:, i: i + 1]    # token: Tensor (batch_size, 1)
             logit, decoder_states, decoder_output = self._step(src_memory, src_mask, token, decoder_states, decoder_output)
             logits.append(logit)
         logits = torch.stack(logits, dim=1)
