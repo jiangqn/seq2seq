@@ -48,6 +48,7 @@ class Trainer(object):
                 optimizer.zero_grad()
                 logits = model(src, src_lens, trg)
                 loss = self._loss(logits, trg, trg_lens, criterion)
+                print(loss)
                 sum_loss += loss * src.size(0)
                 sum_examples += src.size(0)
                 loss.backward()

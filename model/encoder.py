@@ -51,11 +51,11 @@ class Encoder(nn.Module):
         sort_index = sorted(range(len(src_lens)), key=lambda i: src_lens[i], reverse=True)
         src_lens = [src_lens[i] for i in sort_index]
         src_embedding = reorder_sequence(src_embedding, sort_index)
-        packed_src = pack_padded_sequence(src_embedding, src_lens)
-        return packed_src
+        packed_src = pack_padded_sequence(src_embedding, src_lens, batch_first=True)
+        return packed_src, sort_index
 
     def _pad_packed_sequence(self, packed_output, final_encoder_states, sort_index):
-        encoder_output, _ = pad_packed_sequence(packed_output)
+        encoder_output, _ = pad_packed_sequence(packed_output, batch_first=True)
         back_map = {index: i for i, index in enumerate(sort_index)}
         reorder_index = [back_map[i] for i in range(len(sort_index))]
         encoder_output = reorder_sequence(encoder_output, reorder_index)

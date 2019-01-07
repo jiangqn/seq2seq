@@ -47,7 +47,7 @@ class Decoder(nn.Module):
         init_decoder_hidden, _ = init_decoder_states
         init_top_hidden = init_decoder_hidden[-1]
         src_mean = sequence_mean(src_memory, src_lens, dim=1)
-        init_decoder_output = self._output_projection(torch.cat([init_top_hidden, src_mean]))
+        init_decoder_output = self._output_projection(torch.cat([init_top_hidden, src_mean], dim=1))
         return init_decoder_output
 
 class MultiLayerLSTMCells(nn.Module):
@@ -59,10 +59,11 @@ class MultiLayerLSTMCells(nn.Module):
         self._num_layers = num_layers
         self._bias = bias
         self._dropout = dropout
-        self._lstm_cells = nn.ModuleList(
-            nn.LSTMCell(self._input_size, self._hidden_size, self._bias)
-            for _ in range(self._num_layers)
-        )
+        self._lstm_cells = nn.ModuleList([nn.LSTMCell(self._input_size, self._hidden_size, self._bias)])
+        self._lstm_cells.extend(nn.ModuleList(
+            nn.LSTMCell(self._hidden_size, self._hidden_size, self._bias)
+            for _ in range(self._num_layers - 1)
+        ))
 
     def forward(self, input, states):
         # input: Tensor (batch_size, input_size)
@@ -77,8 +78,8 @@ class MultiLayerLSTMCells(nn.Module):
             output_hidden.append(h)
             output_cell.append(c)
             input = F.dropout(h, p=self._dropout, training=self.training)
-        output_hidden = output_hidden.stack(output_hidden, dim=0)
-        output_cell = output_cell.stack(output_cell, dim=0)
+        output_hidden = torch.stack(output_hidden, dim=0)
+        output_cell = torch.stack(output_cell, dim=0)
         return output_hidden, output_cell
 
     @property

@@ -75,13 +75,13 @@ log.write('vocab_size', vocab_size)
 
 def text2vector(texts, max_len):
     num = len(texts)
-    vectors = np.zeros((num, max_len), dtype=np.int16)
+    vectors = np.zeros((num, max_len), dtype=np.int32)
     lens = []
     for i in range(num):
         lens.append(len(texts[i]))
         for j, word in enumerate(texts[i]):
             vectors[i, j] = word2index[word]
-    lens = np.asarray(lens).astype(np.int16)
+    lens = np.asarray(lens).astype(np.int32)
     return vectors, lens
 
 train_src, train_src_lens = text2vector(train_src, train_src_max_len)
