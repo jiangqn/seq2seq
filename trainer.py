@@ -46,9 +46,10 @@ class Trainer(object):
         model = model.cuda()
         print(model)
         criterion = nn.CrossEntropyLoss(reduction='none')
-        optimizer = optim.Adam(model.parameters(), lr=self._config.learning_rate)
         train_loader, dev_loader = self._make_data()
-        for epoch in range(self._config.num_epoches):
+        for epoch in range(1, self._config.num_epoches + 1):
+            learning_rate = self._config.learning_rate * (0.5 ** max(0, epoch - 8))
+            optimizer = optim.SGD(model.parameters(), lr=learning_rate)
             sum_loss = 0
             sum_examples = 0
             s_loss = 0
@@ -70,7 +71,8 @@ class Trainer(object):
                 optimizer.step()
             avg_loss = sum_loss / sum_examples
             print('[epoch %2d] [loss %.4f]' % (epoch, avg_loss))
-            self._eval(model, dev_loader)
+            self._eval(model, dev_loader, epoch)
+            self._save_model(model, epoch)
 
     def _loss(self, logits, trg, trg_lens, criterion):
         # logits: Tensor (batch_size, time_step, vocab_size)
@@ -98,7 +100,8 @@ class Trainer(object):
             texts.append(text.strip())
         return texts
 
-    def _eval(self, model, data_loader):
+    def _eval(self, model, data_loader, epoch=None):
+        pred = []
         for data in data_loader:
             src, src_lens, trg, trg_lens = data
             src, src_lens, trg_lens = src.cuda(), src_lens.tolist(), trg_lens.tolist()
@@ -106,3 +109,15 @@ class Trainer(object):
                 output = model.decode(src, src_lens, max(trg_lens) + 1)
                 texts = self._tensor2texts(output)
                 print(texts[0])
+                pred.extend(texts)
+        path = './data/output/pred' + (('-epoch-' + str(epoch)) if epoch is not None else '') + '.txt'
+        self._write_file(pred, path)
+
+    def _write_file(self, texts, path):
+        file = open(path, 'w', encoding=u'utf-8')
+        for text in texts:
+            file.write(text + '\n')
+
+    def _save_model(self, model, epoch=None):
+        path = './data/checkpoints/model' + (('-epoch-' + str(epoch)) if epoch is not None else '') + '.pkl'
+        torch.save(model, path)

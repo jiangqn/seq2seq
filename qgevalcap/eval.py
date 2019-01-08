@@ -92,12 +92,10 @@ def eval(out_file, src_file, tgt_file, isDIn = False, num_pairs = 500):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("-out", "--out_file", dest="out_file", default="./output/pred.txt", help="output file to compare")
-    parser.add_argument("-src", "--src_file", dest="src_file", default="../data/processed/src-test.txt", help="src file")
-    parser.add_argument("-tgt", "--tgt_file", dest="tgt_file", default="../data/processed/tgt-test.txt", help="target file")
+    parser.add_argument("-out", "--out_file", dest="out_file", default="../data/output/pred-epoch-4.txt", help="output file to compare")
+    parser.add_argument("-src", "--src_file", dest="src_file", default="../data/raw/src-dev.txt", help="src file")
+    parser.add_argument("-tgt", "--tgt_file", dest="tgt_file", default="../data/raw/trg-dev.txt", help="target file")
     args = parser.parse_args()
 
     print "scores: \n"
     eval(args.out_file, args.src_file, args.tgt_file)
-
-
