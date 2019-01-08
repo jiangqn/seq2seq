@@ -33,7 +33,7 @@ class Trainer(object):
         train_dataset = Seq2SeqDataset(self._config.train_path)
         dev_dataset = Seq2SeqDataset(self._config.dev_path)
         train_loader = DataLoader(train_dataset, self._config.batch_size, shuffle=True, num_workers=2)
-        dev_loader = DataLoader(dev_dataset, self._config.batch_size, shuffle=True, num_workers=2)
+        dev_loader = DataLoader(dev_dataset, self._config.batch_size, shuffle=False, num_workers=2)
         return train_loader, dev_loader
 
     def _make_vocab(self):
@@ -78,7 +78,7 @@ class Trainer(object):
         mask = len_mask(trg_lens, trg.size(1))
         vocab_size = logits.size(2)
         logits = logits.view(-1, vocab_size)
-        trg = trg.view(-1)
+        trg = trg.contiguous().view(-1)
         mask = mask.view(-1)
         losses = criterion(logits, trg).masked_select(mask)
         loss = losses.mean()
