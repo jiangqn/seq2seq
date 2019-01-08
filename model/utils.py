@@ -12,6 +12,11 @@ SOS = '<SOS>'
 EOS = '<EOS>'
 UNK = '<UNK>'
 
+PAD_INDEX = 0
+SOS_INDEX = 1
+EOS_INDEX = 2
+UNK_INDEX = 3
+
 url = re.compile('(<url>.*</url>)')
 spacy_en = spacy.load('en')
 

@@ -41,6 +41,7 @@ class Trainer(object):
             self._index2word = pickle.load(handle)
 
     def run(self):
+        self._make_vocab()
         model = self._make_model()
         model = model.cuda()
         print(model)
@@ -93,8 +94,8 @@ class Trainer(object):
                 if word == EOS:
                     break
                 else:
-                    text += word
-            texts.append(text)
+                    text += word + ' '
+            texts.append(text.strip())
         return texts
 
     def _eval(self, model, data_loader):

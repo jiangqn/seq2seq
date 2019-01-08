@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from model.utils import len_mask
-from model.utils import SOS, EOS
+from model.utils import SOS_INDEX
 
 class Seq2Seq(nn.Module):
 
@@ -32,7 +32,7 @@ class Seq2Seq(nn.Module):
         src_mask = len_mask(src_lens, src_memory.size(1))
         init_decoder_output = self._decoder.get_init_decoder_output(src_memory, src_lens, init_decoder_states)
         batch_size = src_memory.size(0)
-        token = torch.tensor([SOS] * batch_size).unsqueeze(1)
+        token = torch.tensor([SOS_INDEX] * batch_size).unsqueeze(1).cuda()
         decoder_states = init_decoder_states
         decoder_output = init_decoder_output
         outputs = []
