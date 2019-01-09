@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.utils import INF
+from torch.nn import init
+from model.utils import INF, INIT
 import math
 
 class Attention(nn.Module):
@@ -57,19 +58,27 @@ class AdditiveAttention(Attention):
     def _score(self, query, key):
         time_step = key.size(1)
         query = query.repeat(time_step, 1, 1).transpose(0, 1)  # (batch_size, time_step, query_size)
-        scores = self._projection(torch.cat([query, key], dim=2)).squeeze()
+        scores = self._projection(torch.cat([query, key], dim=2)).transpose(1, 2)
+        # scores = torch.tanh(scores)
         return scores
 
 class MultiplicativeAttention(Attention):
 
     def __init__(self, query_size, key_size):
         super(MultiplicativeAttention, self).__init__()
-        self._projection = nn.BiLinear(query_size, key_size, 1)
+        self._weights = nn.Parameter(torch.Tensor(key_size, query_size))
+        init.uniform_(self._weights, -INIT, INIT)
 
     def _score(self, query, key):
+        batch_size = query.size(0)
         time_step = key.size(1)
-        query = query.repeat(time_step, 1, 1).transpose(0, 1)  # (batch_size, time_step, query_size)
-        scores = self._projection(query, key).squeeze()
+        weights = self._weights.repeat(batch_size, 1, 1)  # (batch_size, key_size, query_size)
+        query = query.unsqueeze(-1)  # (batch_size, query_size, 1)
+        mids = weights.matmul(query)  # (batch_size, key_size, 1)
+        mids = mids.repeat(time_step, 1, 1, 1).transpose(0, 1)  # (batch_size, time_step, key_size, 1)
+        key = key.unsqueeze(-2)  # (batch_size, time_step, 1, key_size)
+        scores = key.matmul(mids).squeeze(-1).transpose(1, 2)  # (batch_size, time_step)
+        # scores = torch.tanh(scores)
         return scores
 
 class MultiLayerPerceptronAttention(Attention):
@@ -82,5 +91,5 @@ class MultiLayerPerceptronAttention(Attention):
     def _score(self, query, key):
         time_step = key.size(1)
         query = query.repeat(time_step, 1, 1).transpose(0, 1)  # (batch_size, time_step, query_size)
-        score = self._layer2(torch.tanh(self._layer1(torch.cat[query, key], dim=2))).squeeze()
+        score = self._layer2(torch.tanh(self._layer1(torch.cat([query, key], dim=2)))).transpose(1, 2)
         return score

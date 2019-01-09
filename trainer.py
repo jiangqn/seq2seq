@@ -26,7 +26,7 @@ class Trainer(object):
         bridge = Bridge(self._config.hidden_size, self._config.bidirectional)
         lstm_cell = MultiLayerLSTMCells(2 * self._config.embed_size , self._config.hidden_size,
                                         self._config.num_layers, dropout=self._config.dropout)
-        attention = ScaledDotAttention()
+        attention = MultiplicativeAttention(self._config.hidden_size, self._config.hidden_size)
         decoder = Decoder(embedding, lstm_cell, attention, self._config.hidden_size)
         model = Seq2Seq(embedding, encoder, bridge, decoder)
         return model
