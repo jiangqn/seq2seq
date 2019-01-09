@@ -6,12 +6,12 @@ from model.utils import sequence_mean
 
 class Decoder(nn.Module):
 
-    def __init__(self, embedding, lstm_cell, hidden_size):
+    def __init__(self, embedding, lstm_cell, attention, hidden_size):
         super(Decoder, self).__init__()
         self._embedding = embedding
         self._lstm_cell = lstm_cell
         self._query_projection = nn.Linear(hidden_size, hidden_size)
-        self._attn = Attention()
+        self._attn = attention
         self._output_projection = nn.Sequential(
             nn.Linear(2 * hidden_size, hidden_size),
             nn.Tanh(),

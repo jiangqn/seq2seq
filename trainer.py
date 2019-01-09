@@ -5,6 +5,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 from model.encoder import Encoder
 from model.bridge import Bridge
+from model.attention import DotAttention, ScaledDotAttention, AdditiveAttention, MultiplicativeAttention, MultiLayerPerceptronAttention
 from model.decoder import Decoder, MultiLayerLSTMCells
 from model.seq2seq import Seq2Seq
 from dataset import Seq2SeqDataset
@@ -25,7 +26,8 @@ class Trainer(object):
         bridge = Bridge(self._config.hidden_size, self._config.bidirectional)
         lstm_cell = MultiLayerLSTMCells(2 * self._config.embed_size , self._config.hidden_size,
                                         self._config.num_layers, dropout=self._config.dropout)
-        decoder = Decoder(embedding, lstm_cell, self._config.hidden_size)
+        attention = ScaledDotAttention()
+        decoder = Decoder(embedding, lstm_cell, attention, self._config.hidden_size)
         model = Seq2Seq(embedding, encoder, bridge, decoder)
         return model
 
@@ -46,10 +48,9 @@ class Trainer(object):
         model = model.cuda()
         print(model)
         criterion = nn.CrossEntropyLoss(reduction='none')
+        optimizer = optim.Adam(model.parameters(), lr=self._config.learning_rate)
         train_loader, dev_loader = self._make_data()
         for epoch in range(1, self._config.num_epoches + 1):
-            learning_rate = self._config.learning_rate * (0.5 ** max(0, epoch - 8))
-            optimizer = optim.SGD(model.parameters(), lr=learning_rate)
             sum_loss = 0
             sum_examples = 0
             s_loss = 0
