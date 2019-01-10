@@ -69,3 +69,8 @@ def load_word_embeddings(fname, vocab_size, embed_size, word2index):
                 word2vec[word2index[content[0]]] = np.array(list(map(float, content[1:])))
     word2vec[word2index[PAD], :] = 0
     return word2vec
+
+def sentence_clip(sentences, lens):
+    max_len = max(lens)
+    sentences = sentences[:, 0:max_len].contiguous()
+    return sentences
