@@ -59,7 +59,6 @@ class AdditiveAttention(Attention):
         time_step = key.size(1)
         query = query.repeat(time_step, 1, 1).transpose(0, 1)  # (batch_size, time_step, query_size)
         scores = self._projection(torch.cat([query, key], dim=2)).transpose(1, 2)
-        # scores = torch.tanh(scores)
         return scores
 
 class MultiplicativeAttention(Attention):
@@ -78,7 +77,6 @@ class MultiplicativeAttention(Attention):
         mids = mids.repeat(time_step, 1, 1, 1).transpose(0, 1)  # (batch_size, time_step, key_size, 1)
         key = key.unsqueeze(-2)  # (batch_size, time_step, 1, key_size)
         scores = key.matmul(mids).squeeze(-1).transpose(1, 2)  # (batch_size, time_step)
-        # scores = torch.tanh(scores)
         return scores
 
 class MultiLayerPerceptronAttention(Attention):

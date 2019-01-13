@@ -26,8 +26,8 @@ class Trainer(object):
         bridge = Bridge(self._config.hidden_size, self._config.bidirectional)
         lstm_cell = MultiLayerLSTMCells(2 * self._config.embed_size , self._config.hidden_size,
                                         self._config.num_layers, dropout=self._config.dropout)
-        # attention = MultiplicativeAttention(self._config.hidden_size, self._config.hidden_size)
-        attention = AdditiveAttention(self._config.hidden_size, self._config.hidden_size)
+        attention = MultiplicativeAttention(self._config.hidden_size, self._config.hidden_size)
+        # attention = AdditiveAttention(self._config.hidden_size, self._config.hidden_size)
         decoder = Decoder(embedding, lstm_cell, attention, self._config.hidden_size)
         model = Seq2Seq(embedding, encoder, bridge, decoder)
         return model
@@ -59,10 +59,9 @@ class Trainer(object):
                 src, src_lens, trg, trg_lens = data
                 src, src_lens, trg, trg_lens = src.cuda(), src_lens.tolist(), trg.cuda(), trg_lens.tolist()
                 src = sentence_clip(src, src_lens)
-                trg = sentence_clip(trg, trg_lens)
                 optimizer.zero_grad()
-                logits = model(src, src_lens, trg[:, 0:-1])
-                loss = self._loss(logits, trg[:, 1:], trg_lens, criterion)
+                logits = model(src, src_lens, sentence_clip(trg[:, 0:-1], trg_lens))
+                loss = self._loss(logits, sentence_clip(trg[:, 1:], trg_lens), trg_lens, criterion)
                 sum_loss += loss.item() * src.size(0)
                 sum_examples += src.size(0)
                 s_loss += loss.item()

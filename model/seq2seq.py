@@ -41,3 +41,10 @@ class Seq2Seq(nn.Module):
             outputs.append(token[:, 0])
         outputs = torch.stack(outputs, dim=1)
         return outputs
+
+    def beam_decode(self, src, src_lens, max_len, beam_size):
+        # src: Tensor (batch_size, time_step)
+        # src_lens: list (batch_size,)
+        src_embedding = self._embedding(src)
+        encoder_output, final_encoder_states = self._encoder(src_embedding, src_lens)
+        src_memory, init_decoder_states = self._bridge(encoder_output, final_encoder_states)
