@@ -27,7 +27,7 @@ class BeamNode(object):
         # output: Tensor (output_sizs,)
         beam_size = token.size(0)
         return [
-            BeamNode(self.sequence + [token[i]], self.log_prob + log_prob[i], states, output)
+            BeamNode(self.sequence + [token[i].item()], self.log_prob + log_prob[i].item(), states, output)
             for i in range(beam_size)
         ]
 
@@ -131,11 +131,12 @@ class BeamNodeGroup(object):
         for node in extended_nodes:
             if node.hashcode in hashset:
                 continue
-            elif node.is_finished():
+            hashset.add(node.hashcode)
+            if node.is_finished():
                 self._finished_nodes.append(node)
             else:
                 if node.has_repeat_triple_grams():
-                    node.set_log_prob(-INF)
+                    node.log_prob = -INF
                 new_nodes.append(node)
         new_nodes = sorted(new_nodes, reverse=True)
         self._nodes = []
