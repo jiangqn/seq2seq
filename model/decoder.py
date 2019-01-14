@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.attention import Attention
 from model.utils import sequence_mean
 
 class Decoder(nn.Module):
@@ -18,82 +17,43 @@ class Decoder(nn.Module):
             nn.Linear(hidden_size, embedding.embedding_dim)
         )
 
-    def forward(self, src_memory, src_mask, init_decoder_states, init_decoder_output, trg):
+    def forward(self, src_memory, src_mask, init_states, init_output, trg):
         max_len = trg.size(1)
-        decoder_states = init_decoder_states
-        decoder_output = init_decoder_output
+        states = init_states
+        output = init_output
         logits = []
         for i in range(max_len):
             token = trg[:, i: i + 1]    # token: Tensor (batch_size, 1)
-            logit, decoder_states, decoder_output = self._step(src_memory, src_mask, token, decoder_states, decoder_output)
+            logit, states, output = self.step(src_memory, src_mask, token, states, output)
             logits.append(logit)
         logits = torch.stack(logits, dim=1)
         return logits
 
-    def _step(self, src_memory, src_mask, token, prev_decoder_states, prev_decoder_output):
+    def step(self, src_memory, src_mask, token, prev_states, prev_output):
         # src_memory: Tensor (batch_size, time_step, hidden_size)
         # src_mask: Tensor (batch_size, time_step)
         # token: Tensor (batch_size, 1)
-        # prev_decoder_states: tuple (decoder_hidden, decoder_cell)
-        # decoder_hidden: (num_layers, batch_size, hidden_size)
-        # decoder_cell: (num_layers, batch_size, hidden_size)
-        # prev_decoder_output: (batch_size, embed_size)
+        # prev_states: tuple (hidden, cell)
+        # hidden: (num_layers, batch_size, hidden_size)
+        # cell: (num_layers, batch_size, hidden_size)
+        # prev_output: (batch_size, embed_size)
         token_embedding = self._embedding(token).squeeze(1)
-        lstm_input = torch.cat([token_embedding, prev_decoder_output], dim=1)
-        decoder_states = self._lstm_cell(lstm_input, prev_decoder_states)
-        decoder_hidden, _ = decoder_states
-        top_hidden = decoder_hidden[-1]
+        lstm_input = torch.cat([token_embedding, prev_output], dim=1)
+        states = self._lstm_cell(lstm_input, prev_states)
+        hidden, _ = states
+        top_hidden = hidden[-1]
         query = self._query_projection(top_hidden)
         context = self._attn(query, src_memory, src_memory, src_mask)
-        decoder_output = self._output_projection(torch.cat([top_hidden, context], dim=1))
-        logit = torch.mm(decoder_output, self._embedding.weight.t())
-        return logit, decoder_states, decoder_output
+        output = self._output_projection(torch.cat([top_hidden, context], dim=1))
+        logit = torch.mm(output, self._embedding.weight.t())
+        return logit, states, output
 
-    def beam_step(self, src_memory, src_mask, token, prev_decoder_states, prev_decoder_output, k):
-        # src_memory: Tensor (batch_size, time_step, hidden_size)
-        # src_mask: Tensor (batch_size, time_step)
-        # token: Tensor (beam_size, batch_size)
-        # prev_decoder_states: tuple (beam_size, decoder_hidden, decoder_cell)
-        # decoder_hidden: (num_layers, beam_size, batch_size, hidden_size)
-        # decoder_cell: (num_layers, beam_size, batch_size, hidden_size)
-        # prev_decoder_output: (beam_size, batch_size, embed_size)
-        beam_size, batch_size = token.size()
-        token_embedding = self._embedding(token)
-        beam_lstm_input = torch.cat([token_embedding, prev_decoder_output], dim=-1)
-        beam_lstm_input = beam_lstm_input.contiguous().view(beam_size * batch_size, -1)
-        # (beam_size * batch_size, 2 * embed_size)
-        prev_decoder_hidden, prev_decoder_cell = prev_decoder_states
-        num_layers, _, _, hidden_size = prev_decoder_hidden.size()
-        prev_decoder_states = (
-            prev_decoder_hidden.contiguous().view(num_layers, -1, hidden_size),
-            prev_decoder_cell.contiguous().view(num_layers, -1, hidden_size)
-        )
-        decoder_hidden, decoder_cell = self._lstm_cell(beam_lstm_input, prev_decoder_states)
-        top_hidden = decoder_hidden[-1] # (beam_size * batch_size, hidden_size)
-        decoder_states = (
-            decoder_hidden.contiguous().view(num_layers, beam_size, batch_size, -1),
-            decoder_cell.contiguous().view(num_layers, beam_size, batch_size, -1)
-        )
-        query = self._query_projection(top_hidden)
-        context = self._attn(query, src_memory, src_memory, src_mask)
-        decoder_output = self._output_projection(torch.cat([top_hidden, context], dim=1))
-        decoder_output = decoder_output.view(beam_size, batch_size, -1)
-        logit = torch.mm(decoder_output, self._embedding.weight.t())
-        log_prob = F.log_softmax(logit, dim=-1)
-        topk_log_prob, topk_token = log_prob.topk(k=k, dim=-1)
-        return topk_token, topk_log_prob, decoder_states, decoder_output
-
-    def decode_step(self, src_memory, src_mask, token, prev_decoder_states, prev_decoder_output):
-        logit, decoder_states, decoder_output = self._step(src_memory, src_mask, token, prev_decoder_states, prev_decoder_output)
-        token_output = torch.max(logit, dim=1, keepdim=True)[1]
-        return token_output, decoder_states, decoder_output
-
-    def get_init_decoder_output(self, src_memory, src_lens, init_decoder_states):
-        init_decoder_hidden, _ = init_decoder_states
-        init_top_hidden = init_decoder_hidden[-1]
+    def get_init_output(self, src_memory, src_lens, init_states):
+        init_hidden, _ = init_states
+        init_top_hidden = init_hidden[-1]
         src_mean = sequence_mean(src_memory, src_lens, dim=1)
-        init_decoder_output = self._output_projection(torch.cat([init_top_hidden, src_mean], dim=1))
-        return init_decoder_output
+        init_output = self._output_projection(torch.cat([init_top_hidden, src_mean], dim=1))
+        return init_output
 
 class MultiLayerLSTMCells(nn.Module):
 
