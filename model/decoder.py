@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.utils import sequence_mean
+from model.utils import sequence_mean, SOS_INDEX
 
 class Decoder(nn.Module):
 
@@ -17,15 +17,24 @@ class Decoder(nn.Module):
             nn.Linear(hidden_size, embedding.embedding_dim)
         )
 
-    def forward(self, src_memory, src_mask, init_states, init_output, trg):
-        max_len = trg.size(1)
+    def forward(self, src_memory, src_mask, init_states, init_output, trg, teacher_forcing_ratio=None):
+        batch_size, max_len = trg.size()
         states = init_states
         output = init_output
         logits = []
+        if teacher_forcing_ratio is not None:
+            sample_probability = torch.FloatTensor([teacher_forcing_ratio] * batch_size).unsqueeze(-1).cuda()
+            generated_token = torch.LongTensor([SOS_INDEX] * batch_size).unsqueeze(-1).cuda()
         for i in range(max_len):
-            token = trg[:, i: i + 1]    # token: Tensor (batch_size, 1)
+            if teacher_forcing_ratio is not None:
+                sample_distribution = torch.bernoulli(sample_probability).long()
+                token = trg[:, i: i + 1] * sample_distribution + generated_token * (1 - sample_distribution)
+            else:
+                token = trg[:, i: i + 1]
             logit, states, output = self.step(src_memory, src_mask, token, states, output)
             logits.append(logit)
+            if teacher_forcing_ratio is not None:
+                _, generated_token = logit.max(dim=1, keepdim=True)[1]
         logits = torch.stack(logits, dim=1)
         return logits
 
