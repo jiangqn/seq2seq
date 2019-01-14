@@ -49,7 +49,7 @@ class Decoder(nn.Module):
         logit = torch.mm(decoder_output, self._embedding.weight.t())
         return logit, decoder_states, decoder_output
 
-    def _beam_step(self, src_memory, src_mask, token, prev_decoder_states, prev_decoder_output):
+    def beam_step(self, src_memory, src_mask, token, prev_decoder_states, prev_decoder_output, k):
         # src_memory: Tensor (batch_size, time_step, hidden_size)
         # src_mask: Tensor (batch_size, time_step)
         # token: Tensor (beam_size, batch_size)
@@ -77,7 +77,11 @@ class Decoder(nn.Module):
         query = self._query_projection(top_hidden)
         context = self._attn(query, src_memory, src_memory, src_mask)
         decoder_output = self._output_projection(torch.cat([top_hidden, context], dim=1))
+        decoder_output = decoder_output.view(beam_size, batch_size, -1)
         logit = torch.mm(decoder_output, self._embedding.weight.t())
+        log_prob = F.log_softmax(logit, dim=-1)
+        topk_log_prob, topk_token = log_prob.topk(k=k, dim=-1)
+        return topk_token, topk_log_prob, decoder_states, decoder_output
 
     def decode_step(self, src_memory, src_mask, token, prev_decoder_states, prev_decoder_output):
         logit, decoder_states, decoder_output = self._step(src_memory, src_mask, token, prev_decoder_states, prev_decoder_output)

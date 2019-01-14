@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from model.utils import len_mask
 from model.utils import SOS_INDEX
+from model.beam_search import Beamer
 
 class Seq2Seq(nn.Module):
 
@@ -48,3 +49,11 @@ class Seq2Seq(nn.Module):
         src_embedding = self._embedding(src)
         encoder_output, final_encoder_states = self._encoder(src_embedding, src_lens)
         src_memory, init_decoder_states = self._bridge(encoder_output, final_encoder_states)
+        src_mask = len_mask(src_lens, src_memory.size(1))
+        init_decoder_output = self._decoder.get_init_decoder_output(src_memory, src_lens, init_decoder_states)
+        beamer = Beamer(init_decoder_states, init_decoder_output)
+        for _ in range(max_len):
+            token, decoder_states, decoder_output = beamer.pack_batch()
+            topk_token, topk_log_prob, decoder_states, decoder_output = self._decoder.beam_step(
+                src_memory, src_mask, token, decoder_states, decoder_output, beam_size
+            )
