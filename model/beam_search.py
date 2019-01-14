@@ -1,6 +1,6 @@
 import torch
 from collections import Counter
-from utils import SOS_INDEX, EOS_INDEX, INF
+from model.utils import SOS_INDEX, EOS_INDEX, INF
 
 class BeamNode(object):
 
@@ -13,10 +13,10 @@ class BeamNode(object):
         cell: Tensor (num_layers, hidden_size)
         output: Tensor (output_size,)
         '''
-        self._sequence = sequence
-        self._log_prob = log_prob
-        self._states = states
-        self._output = output
+        self.sequence = sequence
+        self.log_prob = log_prob
+        self.states = states
+        self.output = output
 
     def extend(self, token, log_prob, states, output):
         # token: Tensor (beam_size,)
@@ -27,33 +27,30 @@ class BeamNode(object):
         # output: Tensor (output_sizs,)
         beam_size = token.size(0)
         return [
-            BeamNode(self._sequence + [token[i]], self._log_prob + log_prob[i], states, output)
+            BeamNode(self.sequence + [token[i]], self.log_prob + log_prob[i], states, output)
             for i in range(beam_size)
         ]
 
     def __lt__(self, other):
-        return (self._log_prob / len(self._sequence)) < (other._log_prob / len(other._sequence))
-
-    def set_log_prob(self, log_prob):
-        self._log_prob = log_prob
+        return (self.log_prob / len(self.sequence)) < (other.log_prob / len(other.sequence))
 
     def is_finished(self):
-        return self._sequence[-1] == EOS_INDEX
+        return self.sequence[-1] == EOS_INDEX
 
     def has_repeat_triple_grams(self):
-        triple_grams = [tuple(self._sequence[i: i + 3]) for i in range(len(self._sequence) - 2)]
+        triple_grams = [tuple(self.sequence[i: i + 3]) for i in range(len(self.sequence) - 2)]
         count = Counter(triple_grams)
         return not all((count[g] <= 1 for g in count))
 
     @property
     def hashcode(self):
         hash = 0
-        for x in self._sequence:
+        for x in self.sequence:
             hash = hash * 10 + x
         return hash
 
     def get_sequence(self, max_len):
-        sequence = self._sequence if self._sequence[-1] != EOS_INDEX else self._sequence[0: -1]
+        sequence = self.sequence[1:] if self.sequence[-1] != EOS_INDEX else self.sequence[1: -1]
         sequence = sequence + [0] * (max_len - len(sequence))
         return torch.LongTensor(sequence).cuda()
 
@@ -121,7 +118,7 @@ class BeamNodeGroup(object):
     def get_best_sequence(self, max_len):
         self._nodes = sorted(self._nodes, reverse=True)
         self._finished_nodes = sorted(self._finished_nodes, reverse=True)
-        best_node = self._nodes[0] if self._nodes[0] > self._finished_nodes[0] else self._finished_nodes[0]
+        best_node = self._nodes[0] if len(self._finished_nodes) == 0 or self._nodes[0] > self._finished_nodes[0] else self._finished_nodes[0]
         return best_node.get_sequence(max_len)
 
     def next_beam(self, token, log_prob, states, output):

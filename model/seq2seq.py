@@ -14,13 +14,13 @@ class Seq2Seq(nn.Module):
         self._bridge = bridge
         self._decoder = decoder
 
-    def forward(self, src, src_lens, trg):
+    def forward(self, src, src_lens, trg, teacher_forcing_ratio):
         # src: Tensor (batch_size, src_time_step)
         # src_lens: list (batch_size,)
         # trg: Tensor (batch_size, trg_time_step)
         src_memory, src_mask, init_states = self._encode(src, src_lens)
         init_output = self._decoder.get_init_output(src_memory, src_lens, init_states)
-        return self._decoder(src_memory, src_mask, init_states, init_output, trg)
+        return self._decoder(src_memory, src_mask, init_states, init_output, trg, teacher_forcing_ratio)
 
     def _encode(self, src, src_lens):
         # src: Tensor (batch_size, time_step)
@@ -55,9 +55,9 @@ class Seq2Seq(nn.Module):
         # beam_size: int
         src_memory, src_mask, init_states = self._encode(src, src_lens)
         init_output = self._decoder.get_init_output(src_memory, src_lens, init_states)
-        batch_size, time_step, hidden_size = src.size()
-        src_memory = src_memory.repeat(beam_size, 1, 1).view(beam_size * batch_size, time_step, hidden_size).contiguous()
-        src_mask = src_mask.repeat(beam_size, 1, 1).view(beam_size * batch_size, time_step, hidden_size).contiguous()
+        batch_size, time_step, hidden_size = src_memory.size()
+        src_memory = src_memory.repeat(beam_size, 1, 1, 1).view(beam_size * batch_size, time_step, hidden_size).contiguous()
+        src_mask = src_mask.repeat(beam_size, 1, 1).view(beam_size * batch_size, time_step).contiguous()
         beamer = Beamer(
             states=init_states,
             output=init_output,
@@ -71,5 +71,5 @@ class Seq2Seq(nn.Module):
             log_prob = F.log_softmax(logit, dim=-1)
             log_prob, token = log_prob.topk(k=beam_size, dim=-1)
             beamer.next_beam(token, log_prob, states, output)
-        outputs = beamer.get_best_sequences()
+        outputs = beamer.get_best_sequences(max_len)
         return outputs

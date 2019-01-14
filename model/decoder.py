@@ -34,7 +34,7 @@ class Decoder(nn.Module):
             logit, states, output = self.step(src_memory, src_mask, token, states, output)
             logits.append(logit)
             if teacher_forcing_ratio is not None:
-                _, generated_token = logit.max(dim=1, keepdim=True)[1]
+                generated_token = logit.max(dim=1, keepdim=True)[1]
         logits = torch.stack(logits, dim=1)
         return logits
 

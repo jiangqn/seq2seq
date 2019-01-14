@@ -9,7 +9,7 @@ from model.attention import DotAttention, ScaledDotAttention, AdditiveAttention,
 from model.decoder import Decoder, MultiLayerLSTMCells
 from model.seq2seq import Seq2Seq
 from dataset import Seq2SeqDataset
-from model.utils import len_mask, EOS, sentence_clip
+from model.utils import len_mask, EOS, PAD, sentence_clip
 import pickle
 
 class Trainer(object):
@@ -60,7 +60,7 @@ class Trainer(object):
                 src, src_lens, trg, trg_lens = src.cuda(), src_lens.tolist(), trg.cuda(), trg_lens.tolist()
                 src = sentence_clip(src, src_lens)
                 optimizer.zero_grad()
-                logits = model(src, src_lens, sentence_clip(trg[:, 0:-1], trg_lens))
+                logits = model(src, src_lens, sentence_clip(trg[:, 0:-1], trg_lens), teacher_forcing_ratio=0.5)
                 loss = self._loss(logits, sentence_clip(trg[:, 1:], trg_lens), trg_lens, criterion)
                 sum_loss += loss.item() * src.size(0)
                 sum_examples += src.size(0)
@@ -96,7 +96,7 @@ class Trainer(object):
             text = ''
             for index in vector:
                 word = self._index2word[index.item()]
-                if word == EOS:
+                if word == EOS or word == PAD:
                     break
                 else:
                     text += word + ' '
@@ -109,7 +109,7 @@ class Trainer(object):
             src, src_lens, trg, trg_lens = data
             src, src_lens, trg_lens = src.cuda(), src_lens.tolist(), trg_lens.tolist()
             with torch.no_grad():
-                output = model.decode(src, src_lens, max(trg_lens) + 1)
+                output = model.beam_decode(src, src_lens, max(trg_lens) + 1, beam_size=3)
                 texts = self._tensor2texts(output)
                 print(texts[0])
                 pred.extend(texts)
