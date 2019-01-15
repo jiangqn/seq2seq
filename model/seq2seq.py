@@ -14,7 +14,7 @@ class Seq2Seq(nn.Module):
         self._bridge = bridge
         self._decoder = decoder
 
-    def forward(self, src, src_lens, trg, teacher_forcing_ratio):
+    def forward(self, src, src_lens, trg, teacher_forcing_ratio=None):
         # src: Tensor (batch_size, src_time_step)
         # src_lens: list (batch_size,)
         # trg: Tensor (batch_size, trg_time_step)
