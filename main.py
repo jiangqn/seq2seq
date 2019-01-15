@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from model.encoder import Encoder
 from model.bridge import Bridge
 from model.attention import DotAttention, ScaledDotAttention, AdditiveAttention, MultiplicativeAttention, MultiLayerPerceptronAttention
-from model.decoder import Decoder, MultiLayerLSTMCells
+from model.decoder import Decoder, MultiLayerLSTMCells, MultiLayerGRUCells
 from model.seq2seq import Seq2Seq
 from dataset import Seq2SeqDataset
 from model.utils import len_mask, EOS, PAD, sentence_clip
@@ -20,25 +20,87 @@ class Trainer(object):
         self._config = config
 
     def _make_model(self):
-        embedding = nn.Embedding(self._config.vocab_size, self._config.embed_size)
+        # embedding
+        embedding = nn.Embedding(
+            num_embeddings=self._config.vocab_size,
+            embedding_dim=self._config.embed_size
+        )
         embedding.weight.data.copy_(torch.from_numpy(np.load(self._config.embedding_file_name)))
         embedding.weight.requires_grad = False
-        encoder = Encoder(self._config.embed_size, self._config.hidden_size, self._config.num_layers,
-                          self._config.bidirectional, self._config.dropout)
-        bridge = Bridge(self._config.hidden_size, self._config.bidirectional)
-        lstm_cell = MultiLayerLSTMCells(2 * self._config.embed_size , self._config.hidden_size,
-                                        self._config.num_layers, dropout=self._config.dropout)
-        attention = MultiplicativeAttention(self._config.hidden_size, self._config.hidden_size)
-        # attention = AdditiveAttention(self._config.hidden_size, self._config.hidden_size)
-        decoder = Decoder(embedding, lstm_cell, attention, self._config.hidden_size)
+        # encoder
+        encoder = Encoder(
+            rnn_type=self._config.rnn_type,
+            embed_size=self._config.embed_size,
+            hidden_size=self._config.hidden_size,
+            num_layers=self._config.num_layers,
+            bidirectional=self._config.bidirectional,
+            dropout=self._config.dropout
+        )
+        # birdge
+        bridge = Bridge(
+            rnn_type=self._config.rnn_type,
+            hidden_size=self._config.hidden_size,
+            bidirectional=self._config.bidirectional
+        )
+        # decoder rnn cell
+        if self._config.rnn_type == 'LSTM':
+            rnn_cell = MultiLayerLSTMCells(
+                input_size=2 * self._config.embed_size,
+                hidden_size=self._config.hidden_size,
+                num_layers=self._config.num_layers,
+                dropout=self._config.dropout
+            )
+        else:
+            rnn_cell = MultiLayerGRUCells(
+                input_size=2 * self._config.embed_size,
+                hidden_size=self._config.hidden_size,
+                num_layers=self._config.num_layers,
+                dropout=self._config.dropout
+            )
+        # attention
+        if self._config.attention_type == 'Dot':
+            attention = DotAttention()
+        elif self._config.attention_type == 'ScaledDot':
+            attention = ScaledDotAttention()
+        elif self._config.attention_type == 'Additive':
+            attention = AdditiveAttention(
+                query_size=self._config.hidden_size,
+                key_size=self._config.hidden_size
+            )
+        elif self._config.attention_type == 'Multiplicative':
+            attention = MultiplicativeAttention(
+                query_size=self._config.hidden_size,
+                key_size=self._config.hidden_size
+            )
+        elif self._config.attention_type == 'MLP':
+            attention = MultiLayerPerceptronAttention(
+                query_size=self._config.hidden_size,
+                key_size=self._config.hidden_size,
+                out_size=1
+            )
+        else:
+            raise ValueError('No Supporting.')
+        # decoder
+        decoder = Decoder(embedding, rnn_cell, attention, self._config.hidden_size)
+        # model
         model = Seq2Seq(embedding, encoder, bridge, decoder)
         return model
 
     def _make_data(self):
         train_dataset = Seq2SeqDataset(self._config.train_path)
         dev_dataset = Seq2SeqDataset(self._config.dev_path)
-        train_loader = DataLoader(train_dataset, self._config.batch_size, shuffle=True, num_workers=2)
-        dev_loader = DataLoader(dev_dataset, self._config.batch_size, shuffle=False, num_workers=2)
+        train_loader = DataLoader(
+            dataset=train_dataset,
+            batch_size=self._config.batch_size,
+            shuffle=True,
+            num_workers=2
+        )
+        dev_loader = DataLoader(
+            dataset=dev_dataset,
+            batch_size=self._config.batch_size,
+            shuffle=False,
+            num_workers=2
+        )
         return train_loader, dev_loader
 
     def _make_vocab(self):
@@ -130,6 +192,8 @@ class Trainer(object):
 os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--rnn_type', type=str, default='GRU')
+parser.add_argument('--attention_type', type=str, default='Multiplicative', choices=['Dot', 'ScaledDot', 'Additive', 'Multiplicative', 'MLP'])
 parser.add_argument('--embed_size', type=int, default=300)
 parser.add_argument('--vocab_size', type=int, default=37411)
 parser.add_argument('--hidden_size', type=int, default=600)

@@ -2,14 +2,15 @@ import torch
 import torch.nn as nn
 from torch.nn import init
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from model.utils import INIT, reorder_sequence, reorder_lstm_states
+from model.utils import INIT
 
 class Encoder(nn.Module):
 
-    def __init__(self, rnn, embed_size, hidden_size, num_layers, bidirectional, dropout):
+    def __init__(self, rnn_type, embed_size, hidden_size, num_layers, bidirectional, dropout):
         super(Encoder, self).__init__()
         state_layers = num_layers * (2 if bidirectional else 1)
-        if rnn == 'LSTM':
+        self._rnn_type = rnn_type
+        if rnn_type == 'LSTM':
             self._rnn = nn.LSTM(
                 input_size=embed_size,
                 hidden_size=hidden_size,
@@ -18,17 +19,17 @@ class Encoder(nn.Module):
                 dropout=dropout,
                 batch_first=True
             )
-            self._init_states = (
+            self._init_states = nn.ParameterList([
                 nn.Parameter(
                     torch.Tensor(state_layers, hidden_size)
                 ),
                 nn.Parameter(
                     torch.Tensor(state_layers, hidden_size)
                 )
-            )
+            ])
             init.uniform_(self._init_states[0], -INIT, INIT)
             init.uniform_(self._init_states[1], -INIT, INIT)
-        elif rnn == 'GRU':
+        elif rnn_type == 'GRU':
             self._rnn = nn.GRU(
                 input_size=embed_size,
                 hidden_size=hidden_size,
@@ -56,7 +57,7 @@ class Encoder(nn.Module):
         return output, final_states
 
     def _get_init_states(self, batch_size):
-        if isinstance(self._init_states, tuple):    # LSTM
+        if self._rnn_type == 'LSTM':    # LSTM
             state_layers, hidden_size = self._init_states[0].size()
             size = (state_layers, batch_size, hidden_size)
             init_states = (
@@ -66,7 +67,7 @@ class Encoder(nn.Module):
         else:   # GRU
             state_layers, hidden_size = self._init_states.size()
             size = (state_layers, batch_size, hidden_size)
-            init_states = self._init_states.unsqueeze(1).expand(*size).contiguous()
+            init_states = self._init_states.cuda().unsqueeze(1).expand(*size).contiguous()
         return init_states
 
     def _pack_padded_sequence(self, src_embedding, src_lens):
@@ -80,9 +81,9 @@ class Encoder(nn.Module):
         output, _ = pad_packed_sequence(packed_output, batch_first=True)
         back_map = {index: i for i, index in enumerate(sort_index)}
         reorder_index = [back_map[i] for i in range(len(sort_index))]
-        output = reorder_sequence(output, reorder_index)
+        output = self._reorder_sequence(output, reorder_index)
         reorder_index = torch.LongTensor(reorder_index).cuda()
-        if isinstance(final_states, tuple): # LSTM
+        if self._rnn_type == 'LSTM': # LSTM
             final_states = (
                 final_states[0].index_select(index=reorder_index, dim=1),
                 final_states[1].index_select(index=reorder_index, dim=1)

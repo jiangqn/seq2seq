@@ -47,10 +47,12 @@ class Decoder(nn.Module):
         # cell: (num_layers, batch_size, hidden_size)
         # prev_output: (batch_size, embed_size)
         token_embedding = self._embedding(token).squeeze(1)
-        lstm_input = torch.cat([token_embedding, prev_output], dim=1)
-        states = self._rnn_cell(lstm_input, prev_states)
-        hidden, _ = states
-        top_hidden = hidden[-1]
+        rnn_input = torch.cat([token_embedding, prev_output], dim=1)
+        states = self._rnn_cell(rnn_input, prev_states)
+        if isinstance(states, tuple):   # LSTM
+            top_hidden = states[0][-1]
+        else:   # GRU
+            top_hidden = states[-1]
         query = self._query_projection(top_hidden)
         context = self._attn(query, src_memory, src_memory, src_mask)
         output = self._output_projection(torch.cat([top_hidden, context], dim=1))

@@ -3,12 +3,12 @@ import torch.nn as nn
 
 class Bridge(nn.Module):
     
-    def __init__(self, rnn, hidden_size, bidirectional):
+    def __init__(self, rnn_type, hidden_size, bidirectional):
         super(Bridge, self).__init__()
         self._bidirectional = bidirectional
         encoder_output_size = hidden_size * (2 if bidirectional else 1)
         self._encoder_output_projection = nn.Linear(encoder_output_size, hidden_size)
-        self._rnn_type = rnn
+        self._rnn_type = rnn_type
         if self._rnn_type == 'LSTM':
             self._hidden_projection = nn.Linear(encoder_output_size, hidden_size)
             self._cell_projection = nn.Linear(encoder_output_size, hidden_size)
@@ -40,7 +40,7 @@ class Bridge(nn.Module):
                 ], dim=0),
                 torch.stack([
                     self._cell_projection(cell) for cell in final_encoder_states[1]
-                ], dim=1)
+                ], dim=0)
             )
         else:   # GRU
             if self._bidirectional:
@@ -50,5 +50,5 @@ class Bridge(nn.Module):
                 )
             init_decoder_states = torch.stack([
                 self._hidden_projection(hidden) for hidden in final_encoder_states
-            ], dim=1)
+            ], dim=0)
         return encoder_memory, init_decoder_states
