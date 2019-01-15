@@ -121,7 +121,7 @@ class BeamNodeGroup(object):
         best_node = self._nodes[0] if len(self._finished_nodes) == 0 or self._nodes[0] > self._finished_nodes[0] else self._finished_nodes[0]
         return best_node.get_sequence(max_len)
 
-    def next_beam(self, token, log_prob, states, output):
+    def update_beam(self, token, log_prob, states, output):
         token_list, log_prob_list, states_list, output_list = self._unpack_beam(token, log_prob, states, output)
         extended_nodes = []
         for node, token, log_prob, states, output in zip(self._nodes, token_list, log_prob_list, states_list, output_list):
@@ -230,10 +230,10 @@ class Beamer(object):
             output_list.append(output[:, i, :])
         return token_list, log_prob_list, states_list, output_list
 
-    def next_beam(self, token, log_prob, states, output):
+    def update_beam(self, token, log_prob, states, output):
         token_list, log_prob_list, states_list, output_list = self._unpack_batch(token, log_prob, states, output)
         for group, token, log_prob, states, output in zip(self._groups, token_list, log_prob_list, states_list, output_list):
-            group.next_beam(token, log_prob, states, output)
+            group.update_beam(token, log_prob, states, output)
 
     def get_best_sequences(self, max_len):
         best_sequences = torch.stack([

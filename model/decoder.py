@@ -5,10 +5,10 @@ from model.utils import sequence_mean, SOS_INDEX
 
 class Decoder(nn.Module):
 
-    def __init__(self, embedding, lstm_cell, attention, hidden_size):
+    def __init__(self, embedding, rnn_cell, attention, hidden_size):
         super(Decoder, self).__init__()
         self._embedding = embedding
-        self._lstm_cell = lstm_cell
+        self._rnn_cell = rnn_cell
         self._query_projection = nn.Linear(hidden_size, hidden_size)
         self._attn = attention
         self._output_projection = nn.Sequential(
@@ -48,7 +48,7 @@ class Decoder(nn.Module):
         # prev_output: (batch_size, embed_size)
         token_embedding = self._embedding(token).squeeze(1)
         lstm_input = torch.cat([token_embedding, prev_output], dim=1)
-        states = self._lstm_cell(lstm_input, prev_states)
+        states = self._rnn_cell(lstm_input, prev_states)
         hidden, _ = states
         top_hidden = hidden[-1]
         query = self._query_projection(top_hidden)
@@ -58,8 +58,10 @@ class Decoder(nn.Module):
         return logit, states, output
 
     def get_init_output(self, src_memory, src_lens, init_states):
-        init_hidden, _ = init_states
-        init_top_hidden = init_hidden[-1]
+        if isinstance(init_states, tuple):  # LSTM
+            init_top_hidden = init_states[0][-1]
+        else:   # GRU
+            init_top_hidden = init_states[-1]
         src_mean = sequence_mean(src_memory, src_lens, dim=1)
         init_output = self._output_projection(torch.cat([init_top_hidden, src_mean], dim=1))
         return init_output

@@ -28,7 +28,7 @@ class Encoder(nn.Module):
             )
             init.uniform_(self._init_states[0], -INIT, INIT)
             init.uniform_(self._init_states[1], -INIT, INIT)
-        else:
+        elif rnn == 'GRU':
             self._rnn = nn.GRU(
                 input_size=embed_size,
                 hidden_size=hidden_size,
@@ -41,6 +41,8 @@ class Encoder(nn.Module):
                 torch.Tensor(state_layers, hidden_size)
             )
             init.uniform_(self._init_states, -INIT, INIT)
+        else:
+            raise ValueError('No Supporting.')
 
     def forward(self, src_embedding, src_lens):
         # src_embedding: Tensor (batch_size, time_step, embed_size)

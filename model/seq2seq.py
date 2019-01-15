@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.utils import len_mask
-from model.utils import SOS_INDEX
+from model.utils import len_mask, SOS_INDEX
 from model.beam_search import Beamer
 
 class Seq2Seq(nn.Module):
@@ -61,7 +60,8 @@ class Seq2Seq(nn.Module):
         beamer = Beamer(
             states=init_states,
             output=init_output,
-            beam_size=beam_size
+            beam_size=beam_size,
+            remove_repeat_triple_grams=True
         )
         for _ in range(max_len):
             token, states, output = beamer.pack_batch()
@@ -70,6 +70,6 @@ class Seq2Seq(nn.Module):
             )
             log_prob = F.log_softmax(logit, dim=-1)
             log_prob, token = log_prob.topk(k=beam_size, dim=-1)
-            beamer.next_beam(token, log_prob, states, output)
+            beamer.update_beam(token, log_prob, states, output)
         outputs = beamer.get_best_sequences(max_len)
         return outputs
