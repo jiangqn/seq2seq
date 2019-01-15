@@ -79,14 +79,19 @@ class BeamNodeGroup(object):
         token = torch.LongTensor([
             node.sequence[-1] for node in self._nodes
         ]).cuda()
-        states = (
-            torch.stack([
-                node.states[0] for node in self._nodes
-            ], dim=1),
-            torch.stack([
-                node.states[1] for node in self._nodes
+        if isinstance(self._nodes[0].states, tuple):    # LSTM
+            states = (
+                torch.stack([
+                    node.states[0] for node in self._nodes
+                ], dim=1),
+                torch.stack([
+                    node.states[1] for node in self._nodes
+                ], dim=1)
+            )
+        else:   # GRU
+            states = torch.stack([
+                node.states for node in self._nodes
             ], dim=1)
-        )
         output = (
             torch.stack([
                 node.output for node in self._nodes
@@ -108,10 +113,13 @@ class BeamNodeGroup(object):
         for i in range(self._beam_size):
             token_list.append(token[i])
             log_prob_list.append(log_prob[i])
-            states_list.append((
-                states[0][:, i, :],
-                states[1][:, i, :]
-            ))
+            if isinstance(states, tuple):   # LSTM
+                states_list.append((
+                    states[0][:, i, :],
+                    states[1][:, i, :]
+                ))
+            else:   # GRU
+                states_list.append(states[:, i, :])
             output_list.append(output[i])
         return token_list, log_prob_list, states_list, output_list
 
@@ -161,14 +169,24 @@ class Beamer(object):
         self._beam_size = beam_size
         self._batch_size = output.size(0)
         for i in range(self._batch_size):
-            self._groups.append(
-                BeamNodeGroup(
-                    states=(states[0][:, i, :], states[1][:, i, :]),
-                    output=output[i],
-                    beam_size=beam_size,
-                    remove_repeat_triple_grams=remove_repeat_triple_grams
+            if isinstance(states, tuple):   # LSTM
+                self._groups.append(
+                    BeamNodeGroup(
+                        states=(states[0][:, i, :], states[1][:, i, :]),
+                        output=output[i],
+                        beam_size=beam_size,
+                        remove_repeat_triple_grams=remove_repeat_triple_grams
+                    )
                 )
-            )
+            else:   # GRU
+                self._groups.append(
+                    BeamNodeGroup(
+                        states=states[:, i, :],
+                        output=output[i],
+                        beam_size=beam_size,
+                        remove_repeat_triple_grams=remove_repeat_triple_grams
+                    )
+                )
 
     def pack_batch(self):
         token_list = []
@@ -180,23 +198,29 @@ class Beamer(object):
             states_list.append(states)
             output_list.append(output)
         token = torch.stack(token_list, dim=1)
-        states = (
-            torch.stack([
-                states[0] for states in states_list
-            ], dim=2),
-            torch.stack([
-                states[1] for states in states_list
-            ], dim=2)
-        )
+        if isinstance(states_list[0], tuple):   # LSTM
+            states = (
+                torch.stack([
+                    states[0] for states in states_list
+                ], dim=2),
+                torch.stack([
+                    states[1] for states in states_list
+                ], dim=2)
+            )
+        else:
+            states = torch.stack(states_list, dim=2)
         output = torch.stack(output_list, dim=1)
         beam_size, batch_size = token.size()
         assert beam_size == self._beam_size and batch_size == self._batch_size
         num_layers, _, _, hidden_size = states[0].size()
         token = token.view(beam_size * batch_size, 1).contiguous()
-        states = (
-            states[0].view(num_layers, beam_size * batch_size, hidden_size).contiguous(),
-            states[1].view(num_layers, beam_size * batch_size, hidden_size).contiguous()
-        )
+        if isinstance(states, tuple):   # LSTM
+            states = (
+                states[0].view(num_layers, beam_size * batch_size, hidden_size).contiguous(),
+                states[1].view(num_layers, beam_size * batch_size, hidden_size).contiguous()
+            )
+        else:   # GRU
+            states = states.view(num_layers, beam_size * batch_size, hidden_size).contiguous()
         output = output.view(beam_size * batch_size, -1).contiguous()
         return token, states, output
 
@@ -209,11 +233,15 @@ class Beamer(object):
         # output: Tensor (beam_size * batch_size, output_size)
         token = token.view(self._beam_size, self._batch_size, self._beam_size)
         log_prob = log_prob.view(self._beam_size, self._batch_size, self._beam_size)
-        num_layers, _, hidden_size = states[0].size()
-        states = (
-            states[0].view(num_layers, self._beam_size, self._batch_size, hidden_size),
-            states[1].view(num_layers, self._beam_size, self._batch_size, hidden_size)
-        )
+        if isinstance(states, tuple):   # LSTM
+            num_layers, _, hidden_size = states[0].size()
+            states = (
+                states[0].view(num_layers, self._beam_size, self._batch_size, hidden_size),
+                states[1].view(num_layers, self._beam_size, self._batch_size, hidden_size)
+            )
+        else:   # GRU
+            num_layers, _, hidden_size = states.size()
+            states = states.view(num_layers, self._beam_size, self._batch_size, hidden_size)
         output = output.view(self._beam_size, self._batch_size, -1)
         token_list = []
         log_prob_list = []
@@ -223,10 +251,13 @@ class Beamer(object):
         for i in range(batch_size):
             token_list.append(token[:, i, :])
             log_prob_list.append(log_prob[:, i, :])
-            states_list.append((
-                states[0][:, :, i, :],
-                states[1][:, :, i, :]
-            ))
+            if isinstance(states, tuple):
+                states_list.append((
+                    states[0][:, :, i, :],
+                    states[1][:, :, i, :]
+                ))
+            else:   # GRU
+                states_list.append(states[:, :, i, :])
             output_list.append(output[:, i, :])
         return token_list, log_prob_list, states_list, output_list
 
