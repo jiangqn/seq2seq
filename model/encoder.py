@@ -27,8 +27,10 @@ class Encoder(nn.Module):
                     torch.Tensor(state_layers, hidden_size)
                 )
             ])
-            init.uniform_(self._init_states[0], -INIT, INIT)
-            init.uniform_(self._init_states[1], -INIT, INIT)
+            # init.uniform_(self._init_states[0], -INIT, INIT)
+            # init.uniform_(self._init_states[1], -INIT, INIT)
+            init.xavier_uniform_(self._init_states[0])
+            init.xavier_uniform_(self._init_states[1])
         elif rnn_type == 'GRU':
             self._rnn = nn.GRU(
                 input_size=embed_size,
@@ -41,7 +43,8 @@ class Encoder(nn.Module):
             self._init_states = nn.Parameter(
                 torch.Tensor(state_layers, hidden_size)
             )
-            init.uniform_(self._init_states, -INIT, INIT)
+            # init.uniform_(self._init_states, -INIT, INIT)
+            init.xavier_uniform_(self._init_states)
         else:
             raise ValueError('No Supporting.')
 

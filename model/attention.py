@@ -66,7 +66,8 @@ class MultiplicativeAttention(Attention):
     def __init__(self, query_size, key_size):
         super(MultiplicativeAttention, self).__init__()
         self._weights = nn.Parameter(torch.Tensor(key_size, query_size))
-        init.uniform_(self._weights, -INIT, INIT)
+        # init.uniform_(self._weights, -INIT, INIT)
+        init.xavier_uniform_(self._weights)
 
     def _score(self, query, key):
         batch_size = query.size(0)

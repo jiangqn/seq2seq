@@ -173,7 +173,7 @@ class Trainer(object):
             src, src_lens, trg, trg_lens = data
             src, src_lens, trg_lens = src.cuda(), src_lens.tolist(), trg_lens.tolist()
             with torch.no_grad():
-                output = model.decode(src, src_lens, max(trg_lens) + 1)
+                output = model.beam_decode(src, src_lens, max(trg_lens) + 1, beam_size=3)
                 texts = self._tensor2texts(output)
                 print(texts[0])
                 pred.extend(texts)
@@ -192,7 +192,7 @@ class Trainer(object):
 os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--rnn_type', type=str, default='GRU')
+parser.add_argument('--rnn_type', type=str, default='LSTM')
 parser.add_argument('--attention_type', type=str, default='Multiplicative', choices=['Dot', 'ScaledDot', 'Additive', 'Multiplicative', 'MLP'])
 parser.add_argument('--embed_size', type=int, default=300)
 parser.add_argument('--vocab_size', type=int, default=37411)

@@ -212,14 +212,15 @@ class Beamer(object):
         output = torch.stack(output_list, dim=1)
         beam_size, batch_size = token.size()
         assert beam_size == self._beam_size and batch_size == self._batch_size
-        num_layers, _, _, hidden_size = states[0].size()
         token = token.view(beam_size * batch_size, 1).contiguous()
         if isinstance(states, tuple):   # LSTM
+            num_layers, _, _, hidden_size = states[0].size()
             states = (
                 states[0].view(num_layers, beam_size * batch_size, hidden_size).contiguous(),
                 states[1].view(num_layers, beam_size * batch_size, hidden_size).contiguous()
             )
         else:   # GRU
+            num_layers, _, _, hidden_size = states.size()
             states = states.view(num_layers, beam_size * batch_size, hidden_size).contiguous()
         output = output.view(beam_size * batch_size, -1).contiguous()
         return token, states, output
