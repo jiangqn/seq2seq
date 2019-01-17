@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.utils import sequence_mean, SOS_INDEX
+from model.utils import sequence_mean, SOS_INDEX, EOS_INDEX
 
 class Decoder(nn.Module):
 
@@ -28,6 +28,8 @@ class Decoder(nn.Module):
         for i in range(max_len):
             if teacher_forcing_ratio is not None:
                 sample_distribution = torch.bernoulli(sample_probability).long()
+                if i < max_len - 1:
+                    sample_distribution = sample_distribution.masked_fill(trg[:, i + 1: i + 2]==EOS_INDEX, 1)
                 token = trg[:, i: i + 1] * sample_distribution + generated_token * (1 - sample_distribution)
             else:
                 token = trg[:, i: i + 1]

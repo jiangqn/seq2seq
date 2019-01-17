@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch.nn import init
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from model.utils import INIT
 
 class Encoder(nn.Module):
 
@@ -27,8 +26,6 @@ class Encoder(nn.Module):
                     torch.Tensor(state_layers, hidden_size)
                 )
             ])
-            # init.uniform_(self._init_states[0], -INIT, INIT)
-            # init.uniform_(self._init_states[1], -INIT, INIT)
             init.xavier_uniform_(self._init_states[0])
             init.xavier_uniform_(self._init_states[1])
         elif rnn_type == 'GRU':
@@ -43,7 +40,6 @@ class Encoder(nn.Module):
             self._init_states = nn.Parameter(
                 torch.Tensor(state_layers, hidden_size)
             )
-            # init.uniform_(self._init_states, -INIT, INIT)
             init.xavier_uniform_(self._init_states)
         else:
             raise ValueError('No Supporting.')

@@ -124,7 +124,7 @@ class Trainer(object):
                 src, src_lens, trg, trg_lens = src.cuda(), src_lens.tolist(), trg.cuda(), trg_lens.tolist()
                 src = sentence_clip(src, src_lens)
                 optimizer.zero_grad()
-                logits = model(src, src_lens, sentence_clip(trg[:, 0:-1], trg_lens))
+                logits = model(src, src_lens, sentence_clip(trg[:, 0:-1], trg_lens), teacher_forcing_ratio=0.8)
                 loss = self._loss(logits, sentence_clip(trg[:, 1:], trg_lens), trg_lens, criterion)
                 sum_loss += loss.item() * src.size(0)
                 sum_examples += src.size(0)
