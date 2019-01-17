@@ -17,26 +17,15 @@ class Decoder(nn.Module):
             nn.Linear(hidden_size, embedding.embedding_dim)
         )
 
-    def forward(self, src_memory, src_mask, init_states, init_output, trg, teacher_forcing_ratio=None):
+    def forward(self, src_memory, src_mask, init_states, init_output, trg):
         batch_size, max_len = trg.size()
         states = init_states
         output = init_output
         logits = []
-        if teacher_forcing_ratio is not None:
-            sample_probability = torch.FloatTensor([teacher_forcing_ratio] * batch_size).unsqueeze(-1).cuda()
-            generated_token = torch.LongTensor([SOS_INDEX] * batch_size).unsqueeze(-1).cuda()
         for i in range(max_len):
-            if teacher_forcing_ratio is not None:
-                sample_distribution = torch.bernoulli(sample_probability).long()
-                if i < max_len - 1:
-                    sample_distribution = sample_distribution.masked_fill(trg[:, i + 1: i + 2]==EOS_INDEX, 1)
-                token = trg[:, i: i + 1] * sample_distribution + generated_token * (1 - sample_distribution)
-            else:
-                token = trg[:, i: i + 1]
+            token = trg[:, i: i + 1]
             logit, states, output = self.step(src_memory, src_mask, token, states, output)
             logits.append(logit)
-            if teacher_forcing_ratio is not None:
-                generated_token = logit.max(dim=1, keepdim=True)[1]
         logits = torch.stack(logits, dim=1)
         return logits
 

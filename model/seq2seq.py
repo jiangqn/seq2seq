@@ -13,13 +13,13 @@ class Seq2Seq(nn.Module):
         self._bridge = bridge
         self._decoder = decoder
 
-    def forward(self, src, src_lens, trg, teacher_forcing_ratio=None):
+    def forward(self, src, src_lens, trg):
         # src: Tensor (batch_size, src_time_step)
         # src_lens: list (batch_size,)
         # trg: Tensor (batch_size, trg_time_step)
         src_memory, src_mask, init_states = self._encode(src, src_lens)
         init_output = self._decoder.get_init_output(src_memory, src_lens, init_states)
-        return self._decoder(src_memory, src_mask, init_states, init_output, trg, teacher_forcing_ratio)
+        return self._decoder(src_memory, src_mask, init_states, init_output, trg)
 
     def _encode(self, src, src_lens):
         # src: Tensor (batch_size, time_step)
