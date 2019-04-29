@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from fastdata.dataset import Seq2SeqDataset
+from data_process.dataset import Seq2SeqDataset
 
 def make_train_data(config):
     train_dataset = Seq2SeqDataset(config['data_process']['path']['processed']['train'])

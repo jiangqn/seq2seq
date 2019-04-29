@@ -6,8 +6,12 @@ from model.attention import *
 from model.bridge import Bridge
 
 def make_model(config):
-    embedding = nn.Embedding(
-        num_embeddings=config['vocab_size'],
+    src_embedding = nn.Embedding(
+        num_embeddings=config['src_vocab_size'],
+        embedding_dim=config['embed_size']
+    )
+    trg_embedding = nn.Embedding(
+        num_embeddings=config['trg_vocab_size'],
         embedding_dim=config['embed_size']
     )
     # encoder
@@ -64,7 +68,7 @@ def make_model(config):
     else:
         raise ValueError('No Supporting.')
     # decoder
-    decoder = Decoder(embedding, rnn_cell, attention, config['hidden_size'])
+    decoder = Decoder(trg_embedding, rnn_cell, attention, config['hidden_size'])
     # model
-    model = Seq2Seq(embedding, encoder, bridge, decoder)
-    return model
+    seq2seq = Seq2Seq(src_embedding, encoder, bridge, decoder)
+    return seq2seq

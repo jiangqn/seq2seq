@@ -2,9 +2,9 @@ import os
 import yaml
 import numpy as np
 import pickle
-from fastdata.vocab import Vocab
-from fastdata.tokenizer import fair_tokenizer, nltk_tokenizer, spacy_en_tokenizer, spacy_de_tokenizer
-from fastdata.utils import text_file2word_lists, word_lists2numpy
+from data_process.vocab import Vocab
+from data_process.tokenizer import fair_tokenizer, nltk_tokenizer, spacy_en_tokenizer, spacy_de_tokenizer
+from data_process.utils import text_file2word_lists, word_lists2numpy
 
 config = yaml.load(open('config.yml'))['data_process']
 

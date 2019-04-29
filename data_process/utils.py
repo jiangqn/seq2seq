@@ -1,5 +1,5 @@
 import numpy as np
-from fastdata.constants import UNK, SOS, EOS
+from data_process.constants import UNK, SOS, EOS
 
 def text_file2word_lists(text_file, tokenizer):
     word_lists = []

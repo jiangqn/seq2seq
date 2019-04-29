@@ -1,5 +1,5 @@
 import operator
-from fastdata.constants import PAD, UNK, SOS, EOS
+from data_process.constants import PAD, UNK, SOS, EOS
 
 class Vocab(object):
 

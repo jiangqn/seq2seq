@@ -24,17 +24,17 @@ data_process:
       max_size: 30000
       min_freq: 1
 model:
-  src_embedding:
-    vocab_size: 18560
-  trg_embedding:
-    vocab_size: 10842
+  src_vocab_size: 18560
+  trg_vocab_size: 10842
   embed_size: 256
   hidden_size: 512
-  kernel_size: 3
-  num_layers: 20
+  num_layers: 2
+  bidirectional: True
+  rnn_type: LSTM
+  attention_type: ScaledDot
   dropout: 0.1
 train:
-  gpu: 4
+  gpu: 5
   batch_size: 256
   learning_rate: 0.001
   num_epoches: 30
