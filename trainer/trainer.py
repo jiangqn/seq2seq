@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.optim as optim
-from fasttrainer.make_model import make_model
-from fasttrainer.make_data import make_train_data
-from fasttrainer.masked_cross_entropy import masked_cross_entropy
+from trainer.make_model import make_model
+from trainer.make_data import make_train_data
+from trainer.masked_cross_entropy import masked_cross_entropy
 
 def train(config):
     model = make_model(config['model']).cuda()

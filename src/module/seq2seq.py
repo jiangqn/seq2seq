@@ -1,31 +1,12 @@
 import torch
 from torch import nn
-import torch.nn.functional as F
-from src.module.encoder import Encoder
-from src.module.decoder import Decoder
 
 class Seq2Seq(nn.Module):
 
-    def __init__(self, vocab_size, embed_size, hidden_size, rnn_type='LSTM',
-                 num_layers=1, bidirectional=False, dropout=0, weight_tying=True):
+    def __init__(self, encoder, decoder):
         super(Seq2Seq, self).__init__()
-        self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
-        self.encoder = Encoder(
-            embedding=self.embedding,
-            rnn_type=rnn_type,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            bidirectional=bidirectional,
-            dropout=dropout
-        )
-        self.decoder = Decoder(
-            embedding=self.embedding,
-            rnn_type=rnn_type,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            dropout=dropout,
-            weight_tying=weight_tying
-        )
+        self.encoder = encoder
+        self.decoder = decoder
 
     def forward(self, src, trg):
         """
