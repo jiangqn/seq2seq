@@ -13,5 +13,6 @@ nmt:
   learning_rate: 0.001
   num_epoches: 20
   clip: 5.0
+  max_len: 45
 nqg:
   base_path: ./data/nqg/

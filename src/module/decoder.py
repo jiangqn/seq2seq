@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from src.module.rnn_cell.multi_layer_lstm_cell import MultiLayerLSTMCell
 from src.module.rnn_cell.multi_layer_gru_cell import MultiLayerGRUCell
 from src.module.attention.bilinear_attention import BilinearAttention
+from src.module.utils.constants import SOS_INDEX
 
 class Decoder(nn.Module):
 
@@ -51,7 +52,7 @@ class Decoder(nn.Module):
             hidden: FloatTensor (batch_size, hidden_size)
             cell: FloatTensor (batch_size, hidden_size)
         :param trg: LongTensor (batch_size, trg_time_step)
-        :return:
+        :return logit: FloatTensor (batch_size, trg_time_step, trg_vocab_size)
         """
         src_lens = src_mask.long().sum(dim=1, keepdim=False)
         states = init_states
@@ -107,8 +108,27 @@ class Decoder(nn.Module):
         logit = self.generator(output)
         return logit, states, output
 
-    def decode(self):
-        pass
+    def decode(self, src, src_mask, init_states, max_len):
+        """
+        :param src: FloatTensor (batch_size, src_time_step, hidden_size)
+        :param src_mask: ByteTensor (batch_size, src_time_step)
+        :param init_states: hidden or (hidden, cell)
+            hidden: FloatTensor (batch_size, hidden_size)
+            cell: FloatTensor (batch_size, hidden_size)
+        :param max_len: int
+        :return logit: FloatTensor (batch_size, max_len, trg_vocab_size)
+        """
+        src_lens = src_mask.long().sum(dim=1, keepdim=False)
+        states = init_states
+        output = self._get_init_output(src, src_lens, init_states)
+        logit = []
+        token = torch.tensor([SOS_INDEX] * src.size(0)).long().to(src.device)
+        for i in range(max_len):
+            step_logit, states, output = self.step(src, src_mask, token, states, output)
+            logit.append(step_logit)
+            token = step_logit.argmax(dim=-1, keepdim=False)
+        logit = torch.stack(logit, dim=1)
+        return logit
 
     def beam_decode(self):
         pass

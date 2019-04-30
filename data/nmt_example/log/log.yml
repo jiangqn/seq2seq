@@ -1,0 +1,22 @@
+src_oov_size: 0
+src_vocab_size: 18560
+test_data:
+  num: 1000
+  src_avg_len: 37.0
+  src_max_len: 37
+  trg_avg_len: 35.0
+  trg_max_len: 35
+train_data:
+  num: 29000
+  src_avg_len: 47.0
+  src_max_len: 47
+  trg_avg_len: 43.0
+  trg_max_len: 43
+trg_oov_size: 0
+trg_vocab_size: 10842
+val_data:
+  num: 1014
+  src_avg_len: 39.0
+  src_max_len: 39
+  trg_avg_len: 34.0
+  trg_max_len: 34

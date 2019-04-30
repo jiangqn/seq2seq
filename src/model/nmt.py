@@ -44,4 +44,4 @@ class NMT(nn.Module):
         return self.seq2seq(src, trg)
 
     def translate(self, src, max_len):
-        return self.seq2seq.decoder.decode()
+        return self.seq2seq.decode(src, max_len)

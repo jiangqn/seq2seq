@@ -12,8 +12,15 @@ class Seq2Seq(nn.Module):
         """
         :param src: LongTensor (batch_size, src_time_step)
         :param trg: LongTensor (batch_size, trg_time_step)
-        :return logit: FloatTensor (batch_size, trg_time_step, vocab_size)
+        :return logit: FloatTensor (batch_size, trg_time_step, trg_vocab_size)
         """
         src, src_mask, final_states = self.encoder(src)
-        logit = self.decoder(src, src_mask, final_states, trg)
-        return logit
+        return self.decoder(src, src_mask, final_states, trg)
+
+    def decode(self, src, max_len):
+        """
+        :param src: LongTensor (batch_size, src_time_step)
+        :return logit: FloatTensor (batch_size, max_len, trg_vocab_size)
+        """
+        src, src_mask, final_states = self.encoder(src)
+        return self.decoder.decode(src, src_mask, final_states, max_len)
