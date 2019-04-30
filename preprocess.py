@@ -4,8 +4,7 @@ import numpy as np
 import pickle
 from data_process.vocab import Vocab
 from data_process.tokenizer import fair_tokenizer, nltk_tokenizer, spacy_en_tokenizer, spacy_de_tokenizer
-from data_process.utils import text_file2word_lists, word_lists2numpy
-from data_process.analyze import analyze
+from data_process.utils import text_file2word_lists, word_lists2numpy, analyze
 
 config = yaml.load(open('config.yml'))['data_process']
 
@@ -77,6 +76,8 @@ if task == 'nmt':
     log = {
         'src_vocab_size': len(src_index2word),
         'src_oov_size': len(src_word2index) - len(src_index2word),
+        'trg_vocab_size': len(trg_index2word),
+        'trg_oov_size': len(trg_word2index) - len(trg_index2word),
         'train_data': analyze(src_train_word_lists, trg_train_word_lists),
         'val_data': analyze(src_val_word_lists, trg_val_word_lists),
         'test_data': analyze(src_test_word_lists, trg_test_word_lists)
@@ -86,3 +87,15 @@ else:
         pickle.dump(src_word2index, handle)
     with open(os.path.join(config['base_path'], 'processed/word2index'), 'wb') as handle:
         pickle.dump(src_index2word, handle)
+    log = {
+        'vocab_size': len(src_index2word),
+        'oov_size': len(src_word2index) - len(src_index2word),
+        'train_data': analyze(src_train_word_lists, trg_train_word_lists),
+        'val_data': analyze(src_val_word_lists, trg_val_word_lists),
+        'test_data': analyze(src_test_word_lists, trg_test_word_lists)
+    }
+
+if not os.path.exists(os.path.join(config['base_path'], 'log')):
+        os.makedirs(os.path.join(config['base_path'], 'log'))
+with open(os.path.join(config['base_path'], 'log/log.yml'), 'w') as handle:
+    yaml.safe_dump(log, handle, encoding='utf-8', allow_unicode=True, default_flow_style=False)
