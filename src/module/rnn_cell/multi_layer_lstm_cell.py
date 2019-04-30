@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class MultiLayerLSTMCell(nn.Module):
 
     def __init__(self, input_size, hidden_size, num_layers=1, dropout=0, bias=True):
-        super(MultiLayerLSTMCell).__init__()
+        super(MultiLayerLSTMCell, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers

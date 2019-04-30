@@ -67,12 +67,13 @@ class Encoder(nn.Module):
         output = output.index_select(dim=0, index=reorder_index)
         if self.rnn_type == 'LSTM':
             final_states = (
-                final_states[0].index_select(dim=0, index=reorder_index),
-                final_states[1].index_select(dim=0, index=reorder_index)
+                final_states[0].index_select(dim=1, index=reorder_index),
+                final_states[1].index_select(dim=1, index=reorder_index)
             )
         else:   # GRU
-            final_states = final_states.index_select(dim=0, index=reorder_index)
+            final_states = final_states.index_select(dim=1, index=reorder_index)
         output = self.output_projection(output)
+        # raise ValueError('debug')
         if self.rnn_type == 'LSTM':
             if self.bidirectional:
                 final_states = (

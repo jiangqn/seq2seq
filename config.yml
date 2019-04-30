@@ -1,5 +1,17 @@
 task: nmt
 nmt:
+  gpu: 1
   base_path: ./data/nmt_example/
+  embed_size: 300
+  rnn_type: LSTM
+  hidden_size: 300
+  num_layers: 1
+  bidirectional: True
+  dropout: 0.3
+  weight_tying: True
+  batch_size: 64
+  learning_rate: 0.001
+  num_epoches: 20
+  clip: 5.0
 nqg:
   base_path: ./data/nqg/

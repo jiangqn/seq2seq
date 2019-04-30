@@ -60,16 +60,16 @@ def data_process(config):
 
     np.savez(os.path.join(config['base_path'], 'processed/train.npz'), src=src_train, trg=trg_train)
     np.savez(os.path.join(config['base_path'], 'processed/val.npz'), src=src_val, trg=trg_val)
-    np.savez(os.path.join(config['base_path'], 'processed/trg.npz'), src=src_test, trg=trg_test)
+    np.savez(os.path.join(config['base_path'], 'processed/test.npz'), src=src_test, trg=trg_test)
 
     if task == 'nmt':
-        with open(os.path.join(config['base_path'], 'processed/src_word2index'), 'wb') as handle:
+        with open(os.path.join(config['base_path'], 'processed/src_word2index.pkl'), 'wb') as handle:
             pickle.dump(src_word2index, handle)
-        with open(os.path.join(config['base_path'], 'processed/src_index2word'), 'wb') as handle:
+        with open(os.path.join(config['base_path'], 'processed/src_index2word.pkl'), 'wb') as handle:
             pickle.dump(src_index2word, handle)
-        with open(os.path.join(config['base_path'], 'processed/trg_word2index'), 'wb') as handle:
+        with open(os.path.join(config['base_path'], 'processed/trg_word2index.pkl'), 'wb') as handle:
             pickle.dump(trg_word2index, handle)
-        with open(os.path.join(config['base_path'], 'processed/trg_index2word'), 'wb') as handle:
+        with open(os.path.join(config['base_path'], 'processed/trg_index2word.pkl'), 'wb') as handle:
             pickle.dump(trg_index2word, handle)
         log = {
             'src_vocab_size': len(src_index2word),
@@ -81,9 +81,9 @@ def data_process(config):
             'test_data': analyze(src_test_word_lists, trg_test_word_lists)
         }
     else:
-        with open(os.path.join(config['base_path'], 'processed/word2index'), 'wb') as handle:
+        with open(os.path.join(config['base_path'], 'processed/word2index.pkl'), 'wb') as handle:
             pickle.dump(src_word2index, handle)
-        with open(os.path.join(config['base_path'], 'processed/word2index'), 'wb') as handle:
+        with open(os.path.join(config['base_path'], 'processed/index2word.pkl'), 'wb') as handle:
             pickle.dump(src_index2word, handle)
         log = {
             'vocab_size': len(src_index2word),

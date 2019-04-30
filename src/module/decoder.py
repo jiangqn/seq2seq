@@ -16,14 +16,14 @@ class Decoder(nn.Module):
         self.dropout = dropout
         if rnn_type == 'LSTM':
             self.rnn_cell = MultiLayerLSTMCell(
-                input_size=self.embed_size,
+                input_size=self.embed_size * 2,
                 hidden_size=hidden_size,
                 num_layers=num_layers,
                 dropout=dropout
             )
         elif rnn_type == 'GRU':
             self.rnn_cell = MultiLayerGRUCell(
-                input_size=self.embed_size,
+                input_size=self.embed_size * 2,
                 hidden_size=hidden_size,
                 num_layers=num_layers,
                 dropout=dropout
